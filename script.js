@@ -15,7 +15,7 @@ const messageButton = document.getElementById('messageButton');
 
 // Get question box elements
 const questionBox = document.getElementById('questionBox');
-const questionText = document = document.getElementById('questionText');
+const questionText = document.getElementById('questionText'); // CORRECTED LINE HERE
 const optionsContainer = document.getElementById('optionsContainer');
 
 // Get battle screen elements
