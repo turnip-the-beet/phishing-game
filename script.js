@@ -30,9 +30,26 @@ const GROUND_HEIGHT = 50; // Height of the ground from the bottom of the canvas
 const LEVEL_LENGTH = 5000; // Increased total length of the game world in world coordinates
 const PLAYER_SCREEN_X = 150; // Player's fixed X position on the screen (relative to canvas)
 const QUESTIONS_PER_BATTLE = 3; // Number of questions to answer correctly in a row per battle
-const ENEMY_HEIGHT = 100; // Height of enemies, making them unjumpable
 const ENEMY_WALK_SPEED = 1; // How fast enemies roam
 const ENEMY_WALK_RANGE = 100; // How far enemies roam from their spawn point
+
+// Player object - now `x` is its screen position, `worldX` is its position in the game world
+let player = {
+    x: PLAYER_SCREEN_X,
+    y: 0, // Will be set in resizeCanvas/resetGame
+    width: 60, // Increased player width
+    height: 60, // Increased player height
+    velocityY: 0,
+    isGrounded: true
+};
+
+// Define enemy height to be just taller than player's jump, based on new player size
+const ENEMY_HEIGHT = player.height + 40; // Player height (60) + 40 = 100 (same as before, but relative to new player size)
+const ENEMY_WIDTH = 80; // Increased enemy width
+
+// Platform dimensions
+const PLATFORM_HEIGHT = 30; // Increased platform height
+const PLATFORM_WIDTH_BASE = 120; // Base platform width
 
 // --- Image Loading ---
 const playerImage = new Image();
@@ -43,10 +60,12 @@ const platformImage = new Image();
 platformImage.src = './images/platform.png'; // Platform sprite
 const groundImage = new Image();
 groundImage.src = './images/ground.png'; // Ground sprite
+const cloudImage = new Image(); // Still using color for clouds
+const goalImage = new Image(); // Still using color for goal
 
 // Track loaded images to ensure they are ready before drawing
 let imagesLoadedCount = 0;
-const totalImagesToLoad = 4; // Now only 4 images to load
+const totalImagesToLoad = 4; // Only 4 images provided
 
 function imageLoaded() {
     imagesLoadedCount++;
@@ -61,16 +80,6 @@ platformImage.onload = imageLoaded;
 groundImage.onload = imageLoaded;
 // --- End Image Loading ---
 
-
-// Player object - now `x` is its screen position, `worldX` is its position in the game world
-let player = {
-    x: PLAYER_SCREEN_X,
-    y: 0, // Will be set in resizeCanvas/resetGame
-    width: 30,
-    height: 30,
-    velocityY: 0,
-    isGrounded: true
-};
 
 // Tracks the horizontal scroll offset of the game world
 let worldXOffset = 0;
@@ -326,8 +335,8 @@ function initializeBackground() {
             type: 'ground',
             originalX: currentX,
             y: canvas.height - GROUND_HEIGHT,
-            width: 200,
-            height: GROUND_HEIGHT,
+            width: 200, // This width will be scaled by drawImage
+            height: GROUND_HEIGHT, // This height will be scaled by drawImage
             color: '#4CAF50', // Green ground (fallback)
             parallaxFactor: 1 // Scrolls at full speed
         });
@@ -346,7 +355,7 @@ function initializeBackground() {
     backgroundElements.push({ type: 'cloud', originalX: 2400, y: canvas.height - GROUND_HEIGHT - 95, width: 70, height: 36, color: '#ADD8E6', parallaxFactor: 0.27 });
     backgroundElements.push({ type: 'cloud', originalX: 2700, y: canvas.height - GROUND_HEIGHT - 105, width: 95, height: 48, color: '#ADD8E6', parallaxFactor: 0.38 });
 
-    // Define enemy height
+    // Define enemy height and width based on new player size
     const ENEMY_Y_POSITION = canvas.height - GROUND_HEIGHT - ENEMY_HEIGHT;
 
     // Add enemies with questions
@@ -356,8 +365,8 @@ function initializeBackground() {
             type: 'enemy',
             originalX: pos,
             y: ENEMY_Y_POSITION, // Position enemies on the ground
-            width: 40,
-            height: ENEMY_HEIGHT, // Set the new height to 100px
+            width: ENEMY_WIDTH, // Use new enemy width
+            height: ENEMY_HEIGHT, // Use new enemy height
             color: '#8B008B', // Dark magenta for enemies (fallback)
             parallaxFactor: 1,
             active: true, // Enemies are active until defeated
@@ -367,41 +376,42 @@ function initializeBackground() {
     });
 
     // Add platforms/hills
+    const PLATFORM_Y_OFFSET = 60; // Base height above ground for platforms
     backgroundElements.push({
         type: 'platform',
-        originalX: 300, y: canvas.height - GROUND_HEIGHT - 60, width: 80, height: 20, color: '#A0522D', parallaxFactor: 1, active: true
+        originalX: 300, y: canvas.height - GROUND_HEIGHT - PLATFORM_Y_OFFSET, width: PLATFORM_WIDTH_BASE, height: PLATFORM_HEIGHT, color: '#A0522D', parallaxFactor: 1, active: true
     });
     backgroundElements.push({
         type: 'platform',
-        originalX: 700, y: canvas.height - GROUND_HEIGHT - 90, width: 100, height: 20, color: '#A0522D', parallaxFactor: 1, active: true
+        originalX: 700, y: canvas.height - GROUND_HEIGHT - (PLATFORM_Y_OFFSET + 30), width: PLATFORM_WIDTH_BASE + 20, height: PLATFORM_HEIGHT, color: '#A0522D', parallaxFactor: 1, active: true
     });
     backgroundElements.push({
         type: 'platform',
-        originalX: 1100, y: canvas.height - GROUND_HEIGHT - 60, width: 60, height: 20, color: '#A0522D', parallaxFactor: 1, active: true
+        originalX: 1100, y: canvas.height - GROUND_HEIGHT - PLATFORM_Y_OFFSET, width: PLATFORM_WIDTH_BASE - 20, height: PLATFORM_HEIGHT, color: '#A0522D', parallaxFactor: 1, active: true
     });
     backgroundElements.push({
         type: 'platform',
-        originalX: 1500, y: canvas.height - GROUND_HEIGHT - 120, width: 120, height: 20, color: '#A0522D', parallaxFactor: 1, active: true
+        originalX: 1500, y: canvas.height - GROUND_HEIGHT - (PLATFORM_Y_OFFSET + 60), width: PLATFORM_WIDTH_BASE + 40, height: PLATFORM_HEIGHT, color: '#A0522D', parallaxFactor: 1, active: true
     });
     backgroundElements.push({
         type: 'platform',
-        originalX: 2200, y: canvas.height - GROUND_HEIGHT - 70, width: 90, height: 20, color: '#A0522D', parallaxFactor: 1, active: true
+        originalX: 2200, y: canvas.height - GROUND_HEIGHT - (PLATFORM_Y_OFFSET + 10), width: PLATFORM_WIDTH_BASE - 10, height: PLATFORM_HEIGHT, color: '#A0522D', parallaxFactor: 1, active: true
     });
     backgroundElements.push({
         type: 'platform',
-        originalX: 2800, y: canvas.height - GROUND_HEIGHT - 100, width: 110, height: 20, color: '#A0522D', parallaxFactor: 1, active: true
+        originalX: 2800, y: canvas.height - GROUND_HEIGHT - (PLATFORM_Y_OFFSET + 40), width: PLATFORM_WIDTH_BASE + 30, height: PLATFORM_HEIGHT, color: '#A0522D', parallaxFactor: 1, active: true
     });
     backgroundElements.push({
         type: 'platform',
-        originalX: 3300, y: canvas.height - GROUND_HEIGHT - 60, width: 70, height: 20, color: '#A0522D', parallaxFactor: 1, active: true
+        originalX: 3300, y: canvas.height - GROUND_HEIGHT - PLATFORM_Y_OFFSET, width: PLATFORM_WIDTH_BASE - 50, height: PLATFORM_HEIGHT, color: '#A0522D', parallaxFactor: 1, active: true
     });
     backgroundElements.push({
         type: 'platform',
-        originalX: 3800, y: canvas.height - GROUND_HEIGHT - 90, width: 100, height: 20, color: '#A0522D', parallaxFactor: 1, active: true
+        originalX: 3800, y: canvas.height - GROUND_HEIGHT - (PLATFORM_Y_OFFSET + 30), width: PLATFORM_WIDTH_BASE + 10, height: PLATFORM_HEIGHT, color: '#A0522D', parallaxFactor: 1, active: true
     });
     backgroundElements.push({
         type: 'platform',
-        originalX: 4500, y: canvas.height - GROUND_HEIGHT - 130, width: 80, height: 20, color: '#A0522D', parallaxFactor: 1, active: true
+        originalX: 4500, y: canvas.height - GROUND_HEIGHT - (PLATFORM_Y_OFFSET + 70), width: PLATFORM_WIDTH_BASE - 40, height: PLATFORM_HEIGHT, color: '#A0522D', parallaxFactor: 1, active: true
     });
 
 
@@ -501,9 +511,10 @@ function update() {
         // Player collision with platform
         else if (element.type === 'platform') {
             // Check if player is falling and lands on top of the platform
+            // Also ensure player is within horizontal bounds of platform
             if (player.velocityY >= 0 && // Player is falling or stationary vertically
-                player.x < elementScreenX + element.width &&
-                player.x + player.width > elementScreenX &&
+                player.x + player.width > elementScreenX && // Player's right edge is past platform's left edge
+                player.x < elementScreenX + element.width && // Player's left edge is before platform's right edge
                 player.y + player.height <= element.y + player.velocityY && // Player's bottom is above or just touching platform top
                 player.y + player.height + player.velocityY > element.y) { // Player will intersect platform next frame
                 
@@ -568,7 +579,10 @@ function draw() {
                 ctx.fillRect(elementScreenX, element.y, element.width, element.height);
             } else if (element.type === 'ground') {
                 if (groundImage.complete && groundImage.naturalHeight !== 0) {
-                    ctx.drawImage(groundImage, elementScreenX, element.y, element.width, element.height);
+                    // Draw ground as a repeating pattern if the image is smaller than the element width
+                    const pattern = ctx.createPattern(groundImage, 'repeat-x');
+                    ctx.fillStyle = pattern;
+                    ctx.fillRect(elementScreenX, element.y, element.width, element.height);
                 } else {
                     ctx.fillStyle = element.color; // Fallback color
                     ctx.fillRect(elementScreenX, element.y, element.width, element.height);
