@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrolling Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="game-controls">
+        <button class="control-button left" id="leftButton">Left</button>
+        <button class="control-button jump" id="jumpButton">Jump</button>
+        <button class="control-button right" id="rightButton">Right</button>
+    </div>
+
+    <div id="battleScreen" class="battle-screen">
+        <h1>Enemy Encounter!</h1>
+        <p>A dangerous enemy blocks your path! You must answer 3 questions correctly in a row to defeat it and proceed.</p>
+        <p>Answer incorrectly, and you'll have to start over!</p>
+        <button id="startBattleButton">Start Battle</button>
+    </div>
+
+    <div id="questionBox" class="question-box">
+        <h2 id="questionText"></h2>
+        <div id="optionsContainer" class="options-container">
+            </div>
+    </div>
+
+    <div id="messageBox" class="message-box">
+        <p id="messageText"></p>
+        <button id="messageButton">OK</button>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
