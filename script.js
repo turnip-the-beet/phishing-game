@@ -630,6 +630,22 @@ startBattleButton.addEventListener('click', () => {
     presentNextQuestion(); // Start presenting questions
 });
 
+// Fullscreen button event listener
+fullscreenButton.addEventListener('click', () => {
+    if (document.fullscreenElement) {
+        // If already in fullscreen, exit fullscreen
+        document.exitFullscreen().catch(err => {
+            console.error(`Error attempting to exit fullscreen: ${err.message} (${err.name})`);
+        });
+    } else {
+        // If not in fullscreen, request fullscreen for the body
+        document.documentElement.requestFullscreen().catch(err => {
+            console.error(`Error attempting to enable fullscreen: ${err.message} (${err.name})`);
+            showMessageBox("Fullscreen failed. Your browser may require specific settings or a direct user gesture.", null);
+        });
+    }
+});
+
 // Handle canvas resizing to maintain responsiveness
 function resizeCanvas() {
     // Set canvas display size based on CSS, then set internal drawing buffer size
