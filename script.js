@@ -15,7 +15,7 @@ const messageButton = document.getElementById('messageButton');
 
 // Get question box elements
 const questionBox = document.getElementById('questionBox');
-const questionText = document.getElementById('questionText');
+const questionText = document = document.getElementById('questionText');
 const optionsContainer = document.getElementById('optionsContainer');
 
 // Get battle screen elements
@@ -60,8 +60,6 @@ const platformImage = new Image();
 platformImage.src = './images/platform.png'; // Platform sprite
 const groundImage = new Image();
 groundImage.src = './images/ground.png'; // Ground sprite
-const cloudImage = new Image(); // Still using color for clouds
-const goalImage = new Image(); // Still using color for goal
 
 // Track loaded images to ensure they are ready before drawing
 let imagesLoadedCount = 0;
