@@ -80,6 +80,14 @@ canvas {
     background-color: #bd2130;
     box-shadow: 0 3px #a71d2a;
 }
+.control-button.fullscreen { /* New style for fullscreen button */
+            background-color: #6c757d;
+            box-shadow: 0 5px #545b62;
+        }
+        .control-button.fullscreen:active {
+            background-color: #545b62;
+            box-shadow: 0 3px #3d4247;
+        }
 
 .message-box, .question-box, .battle-screen {
     position: fixed;
