@@ -6,6 +6,7 @@ const ctx = canvas.getContext('2d');
 const leftButton = document.getElementById('leftButton');
 const jumpButton = document.getElementById('jumpButton');
 const rightButton = document.getElementById('rightButton');
+const fullscreenButton = document.getElementById('fullscreenButton'); // Get fullscreen button
 
 // Get message box elements
 const messageBox = document.getElementById('messageBox');
