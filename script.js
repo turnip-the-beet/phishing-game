@@ -507,7 +507,6 @@ function initializeBackground() {
  * This function is called repeatedly in the game loop.
  */
 function update() {
-    // console.log(`Update: gameRunning=${gameRunning}, battleState=${battleState}`); // Debug log
     if (!gameRunning || gameOver) return; // Only update if game is running and not over
 
     // Apply gravity (buoyancy)
@@ -577,7 +576,7 @@ function update() {
     // Update enemy movement (chasing logic)
     if (battleState === 'idle') { // Enemies only move when not in battle
         backgroundElements.forEach(element => {
-            if (element.type === 'enemy' && element.active) {
+            if (element.type === 'enemy' && element.active) { // Only move active enemies
                 // Get enemy's current screen position for chasing calculation
                 const enemyWorldX = element.originalX; // Enemy world X
                 const enemyWorldY = element.y; // Enemy world Y
@@ -608,17 +607,12 @@ function update() {
     for (let i = 0; i < backgroundElements.length; i++) {
         const element = backgroundElements[i];
 
-        // Calculate element's current screen position based on its world position and scroll offset
+        // Calculate element's current world position
         const elementWorldX = element.originalX;
         const elementWorldY = element.y;
 
-        // Skip collision checks for defeated enemies. Other elements are always active.
-        if (element.type === 'enemy' && !element.active) {
-            continue;
-        }
-
-        // Player collision with enemy (only if not in battle)
-        if (element.type === 'enemy' && battleState === 'idle') {
+        // Player collision with enemy (only if not in battle AND enemy is active)
+        if (element.type === 'enemy' && battleState === 'idle' && element.active) {
             if (player.worldX < elementWorldX + element.width &&
                 player.worldX + player.width > elementWorldX &&
                 player.worldY < elementWorldY + element.height &&
@@ -630,7 +624,7 @@ function update() {
                 return; // Stop updating while battle screen is active
             }
         }
-        // Player collision with platform (now solid from all sides)
+        // Player collision with platform (platforms are always active/solid)
         else if (element.type === 'platform') {
             // Check for general AABB collision
             if (player.worldX < elementWorldX + element.width &&
@@ -660,7 +654,7 @@ function update() {
                         player.worldY = elementWorldY - player.height;
                         player.velocityY = 0;
                         player.isGrounded = true; // Player is resting on platform
-                    } else { // Player hit from bottom (bumping head on platform)
+                    } else { // Player.worldY > elementWorldY (player hit from bottom)
                         player.worldY = elementWorldY + element.height;
                         player.velocityY = 0; // Stop upward movement
                     }
@@ -703,13 +697,6 @@ function draw() {
     // Draw background elements
     for (let i = 0; i < backgroundElements.length; i++) {
         const element = backgroundElements[i];
-
-        // Only draw active elements (enemies, goals, platforms) or always draw ground/clouds
-        // Defeated enemies (active: false) will now also be drawn
-        if (element.type !== 'ground' && element.type !== 'cloud' && element.type !== 'platform' && element.type !== 'enemy' && !element.active) {
-            continue; // Skip drawing elements that are not ground/cloud/platform/enemy AND are inactive
-        }
-
 
         // Calculate element's current screen position based on its world position and camera offset
         const elementScreenX = element.originalX - worldXOffset * element.parallaxFactor;
