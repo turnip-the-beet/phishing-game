@@ -23,11 +23,14 @@ const optionsContainer = document.getElementById('optionsContainer');
 const battleScreen = document.getElementById('battleScreen');
 const startBattleButton = document.getElementById('startBattleButton');
 
+// Get debug info element
+const debugInfo = document.getElementById('debugInfo'); // Added debug info element
+
 // Game constants and variables
 const GRAVITY = 0.05; // Reduced gravity for underwater feel
 const WATER_DRAG = 0.93; // How much velocity is retained each frame (0.93 = 7% drag)
 const SWIM_THRUST = 1.5; // Increased Force applied when swimming up/down
-const PLAYER_SPEED = 8; // Increased Horizontal movement speed of the player
+const PLAYER_SPEED = 8; // Horizontal movement speed of the player
 
 const GROUND_HEIGHT = 50; // Height of the ocean floor
 const PLAYER_SCREEN_X = 150; // Player's fixed X position on the screen (relative to canvas)
@@ -333,6 +336,12 @@ function showBattleScreen(enemy) {
     currentEnemy = enemy; // Store reference to the enemy
     battleScreen.style.display = 'block';
 
+    // IMMEDIATELY DEACTIVATE THE ENEMY HERE TO PREVENT RE-TRIGGERING
+    if (currentEnemy) {
+        currentEnemy.active = false;
+        console.log(`Enemy at worldX ${currentEnemy.originalX} deactivated upon battle start.`);
+    }
+
     // Reset keys state when battle screen appears
     keys.left = false;
     keys.right = false;
@@ -397,10 +406,7 @@ function presentNextQuestion() {
  */
 function battleWon() {
     console.log("battleWon called.");
-    if (currentEnemy) {
-        currentEnemy.active = false; // Deactivate the enemy
-        console.log(`Enemy at worldX ${currentEnemy.originalX} deactivated.`);
-    }
+    // currentEnemy.active is now set to false in showBattleScreen
     battleState = 'idle'; // Reset battle state
     currentEnemy = null; // Clear enemy reference
     gameRunning = true; // Resume game
@@ -587,7 +593,7 @@ function update() {
                 const enemyWorldX = element.originalX; // Enemy world X
                 const enemyWorldY = element.y; // Enemy world Y
 
-                // Calculate distance to player in world coordinates
+                // Calculate distance to player
                 const dx = (player.worldX + player.width / 2) - (enemyWorldX + element.width / 2);
                 const dy = (player.worldY + player.height / 2) - (enemyWorldY + element.height / 2);
                 const distance = Math.sqrt(dx * dx + dy * dy);
@@ -648,15 +654,15 @@ function update() {
                 if (overlapX < overlapY) { // Horizontal collision is smaller, so it's a side collision
                     // If player is trying to move right and hits left side of platform
                     if (keys.right && player.worldX < elementWorldX) {
-                        // Adjust worldXOffset to block movement, based on player's screen X
-                        worldXOffset = elementWorldX - player.x; // worldXOffset = elementWorldX - player.screenX
                         player.worldX = elementWorldX - player.width; // Snap player worldX to edge
+                        // Adjust worldXOffset based on player's new worldX to keep player on screen
+                        worldXOffset = player.worldX - PLAYER_SCREEN_X;
                     }
                     // If player is trying to move left and hits right side of platform
                     else if (keys.left && player.worldX > elementWorldX) {
-                        // Adjust worldXOffset to block movement, based on player's screen X
-                        worldXOffset = elementWorldX + element.width - player.x; // worldXOffset = elementWorldX + element.width - player.screenX
                         player.worldX = elementWorldX + element.width; // Snap player worldX to edge
+                        // Adjust worldXOffset based on player's new worldX to keep player on screen
+                        worldXOffset = player.worldX - (PLAYER_SCREEN_X + player.width); // Adjust based on player's right edge
                     }
                 } else { // Vertical collision is smaller, so it's a top/bottom collision
                     if (player.worldY < elementWorldY) { // Player hit from top (landing on platform)
@@ -728,6 +734,9 @@ function draw() {
     player.y = player.worldY - worldYOffset;
     ctx.fillStyle = 'red'; // Color for the swimming guy
     ctx.fillRect(player.x, player.y, player.width, player.height);
+
+    // Debug info display (temporarily re-added)
+    debugInfo.textContent = `WorldX: ${Math.round(worldXOffset)} | WorldY: ${Math.round(worldYOffset)} | PlayerWorldY: ${Math.round(player.worldY)} | PlayerScreenY: ${Math.round(player.y)} | BattleState: ${battleState} | GameRunning: ${gameRunning}`;
 }
 
 /**
@@ -884,10 +893,6 @@ function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width;
     canvas.height = rect.height;
-
-    // Adjust player's initial Y position based on new canvas height
-    // This will be handled by resetLevel, which uses player.worldY
-    // player.y = canvas.height - GROUND_HEIGHT - player.height; 
 
     // Re-initialize background elements with correct Y positions and new canvas width
     // This is important because level elements depend on canvas.height
