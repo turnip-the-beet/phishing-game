@@ -612,8 +612,10 @@ function update() {
         const elementWorldX = element.originalX;
         const elementWorldY = element.y;
 
-        // Only check collisions with active elements and if not in battle for enemies
-        if (!element.active) continue;
+        // Skip collision checks for defeated enemies. Other elements are always active.
+        if (element.type === 'enemy' && !element.active) {
+            continue;
+        }
 
         // Player collision with enemy (only if not in battle)
         if (element.type === 'enemy' && battleState === 'idle') {
@@ -703,7 +705,11 @@ function draw() {
         const element = backgroundElements[i];
 
         // Only draw active elements (enemies, goals, platforms) or always draw ground/clouds
-        if (!element.active && element.type !== 'ground' && element.type !== 'cloud' && element.type !== 'platform') continue;
+        // Defeated enemies (active: false) will now also be drawn
+        if (element.type !== 'ground' && element.type !== 'cloud' && element.type !== 'platform' && element.type !== 'enemy' && !element.active) {
+            continue; // Skip drawing elements that are not ground/cloud/platform/enemy AND are inactive
+        }
+
 
         // Calculate element's current screen position based on its world position and camera offset
         const elementScreenX = element.originalX - worldXOffset * element.parallaxFactor;
@@ -713,10 +719,11 @@ function draw() {
         if (elementScreenX + element.width > 0 && elementScreenX < canvas.width &&
             elementScreenY + element.height > 0 && elementScreenY < canvas.height) {
             
-            ctx.fillStyle = element.color;
             // Apply visual cue for defeated enemies
             if (element.type === 'enemy' && !element.active) {
                 ctx.fillStyle = 'rgba(128, 128, 128, 0.5)'; // Grey and semi-transparent
+            } else {
+                ctx.fillStyle = element.color; // Use original color for active elements
             }
             ctx.fillRect(elementScreenX, elementScreenY, element.width, element.height);
         }
