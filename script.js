@@ -15,7 +15,7 @@ const messageButton = document.getElementById('messageButton');
 
 // Get question box elements
 const questionBox = document.getElementById('questionBox');
-const questionText = document.getElementById('questionText'); // CORRECTED LINE HERE
+const questionText = document.getElementById('questionText');
 const optionsContainer = document.getElementById('optionsContainer');
 
 // Get battle screen elements
@@ -37,45 +37,22 @@ const ENEMY_WALK_RANGE = 100; // How far enemies roam from their spawn point
 let player = {
     x: PLAYER_SCREEN_X,
     y: 0, // Will be set in resizeCanvas/resetGame
-    width: 60, // Increased player width
-    height: 60, // Increased player height
+    width: 60, // Player width
+    height: 60, // Player height
     velocityY: 0,
     isGrounded: true
 };
 
-// Define enemy height to be just taller than player's jump, based on new player size
-const ENEMY_HEIGHT = player.height + 40; // Player height (60) + 40 = 100 (same as before, but relative to new player size)
-const ENEMY_WIDTH = 80; // Increased enemy width
+// Define enemy height and width based on new player size
+const ENEMY_HEIGHT = player.height + 40; // Player height (60) + 40 = 100
+const ENEMY_WIDTH = 80; // Enemy width
 
 // Platform dimensions
-const PLATFORM_HEIGHT = 30; // Increased platform height
+const PLATFORM_HEIGHT = 30; // Platform height
 const PLATFORM_WIDTH_BASE = 120; // Base platform width
 
-// --- Image Loading ---
-const playerImage = new Image();
-playerImage.src = './images/player_droid.png'; // Player sprite
-const enemyImage = new Image();
-enemyImage.src = './images/enemy.png';   // Enemy sprite
-const platformImage = new Image();
-platformImage.src = './images/platform.png'; // Platform sprite
-const groundImage = new Image();
-groundImage.src = './images/ground.png'; // Ground sprite
-
-// Track loaded images to ensure they are ready before drawing
-let imagesLoadedCount = 0;
-const totalImagesToLoad = 4; // Only 4 images provided
-
-function imageLoaded() {
-    imagesLoadedCount++;
-    if (imagesLoadedCount === totalImagesToLoad) {
-        console.log("All specified game images loaded!");
-    }
-}
-
-playerImage.onload = imageLoaded;
-enemyImage.onload = imageLoaded;
-platformImage.onload = imageLoaded;
-groundImage.onload = imageLoaded;
+// --- Image Loading (All removed, replaced with placeholders for clarity) ---
+// No Image() objects or onload handlers needed as sprites are removed.
 // --- End Image Loading ---
 
 
@@ -333,9 +310,9 @@ function initializeBackground() {
             type: 'ground',
             originalX: currentX,
             y: canvas.height - GROUND_HEIGHT,
-            width: 200, // This width will be scaled by drawImage
-            height: GROUND_HEIGHT, // This height will be scaled by drawImage
-            color: '#4CAF50', // Green ground (fallback)
+            width: 200,
+            height: GROUND_HEIGHT,
+            color: '#4CAF50', // Green ground
             parallaxFactor: 1 // Scrolls at full speed
         });
         currentX += 200; // Move to the next segment
@@ -353,7 +330,7 @@ function initializeBackground() {
     backgroundElements.push({ type: 'cloud', originalX: 2400, y: canvas.height - GROUND_HEIGHT - 95, width: 70, height: 36, color: '#ADD8E6', parallaxFactor: 0.27 });
     backgroundElements.push({ type: 'cloud', originalX: 2700, y: canvas.height - GROUND_HEIGHT - 105, width: 95, height: 48, color: '#ADD8E6', parallaxFactor: 0.38 });
 
-    // Define enemy height and width based on new player size
+    // Define enemy height and width
     const ENEMY_Y_POSITION = canvas.height - GROUND_HEIGHT - ENEMY_HEIGHT;
 
     // Add enemies with questions
@@ -363,9 +340,9 @@ function initializeBackground() {
             type: 'enemy',
             originalX: pos,
             y: ENEMY_Y_POSITION, // Position enemies on the ground
-            width: ENEMY_WIDTH, // Use new enemy width
-            height: ENEMY_HEIGHT, // Use new enemy height
-            color: '#8B008B', // Dark magenta for enemies (fallback)
+            width: ENEMY_WIDTH,
+            height: ENEMY_HEIGHT,
+            color: '#8B008B', // Dark magenta for enemies
             parallaxFactor: 1,
             active: true, // Enemies are active until defeated
             spawnX: pos, // Store original spawn X for roaming
@@ -420,7 +397,7 @@ function initializeBackground() {
         y: canvas.height - GROUND_HEIGHT - 50,
         width: 50,
         height: 50,
-        color: '#0000FF', // Blue for goal (fallback)
+        color: '#0000FF', // Blue for goal
         parallaxFactor: 1,
         active: true // Goal is always active
     });
@@ -556,54 +533,15 @@ function draw() {
 
         // Only draw elements that are within the visible canvas area
         if (elementScreenX + element.width > 0 && elementScreenX < canvas.width) {
-            // Use drawImage for sprites, fallback to fillRect if image not loaded or type not handled
-            if (element.type === 'enemy') {
-                if (enemyImage.complete && enemyImage.naturalHeight !== 0) { // Check if image is loaded
-                    ctx.drawImage(enemyImage, elementScreenX, element.y, element.width, element.height);
-                } else {
-                    ctx.fillStyle = element.color; // Fallback color
-                    ctx.fillRect(elementScreenX, element.y, element.width, element.height);
-                }
-            } else if (element.type === 'platform') {
-                if (platformImage.complete && platformImage.naturalHeight !== 0) {
-                    ctx.drawImage(platformImage, elementScreenX, element.y, element.width, element.height);
-                } else {
-                    ctx.fillStyle = element.color; // Fallback color
-                    ctx.fillRect(elementScreenX, element.y, element.width, element.height);
-                }
-            } else if (element.type === 'cloud') {
-                // No sprite provided for clouds, draw as color
-                ctx.fillStyle = element.color;
-                ctx.fillRect(elementScreenX, element.y, element.width, element.height);
-            } else if (element.type === 'ground') {
-                if (groundImage.complete && groundImage.naturalHeight !== 0) {
-                    // Draw ground as a repeating pattern if the image is smaller than the element width
-                    const pattern = ctx.createPattern(groundImage, 'repeat-x');
-                    ctx.fillStyle = pattern;
-                    ctx.fillRect(elementScreenX, element.y, element.width, element.height);
-                } else {
-                    ctx.fillStyle = element.color; // Fallback color
-                    ctx.fillRect(elementScreenX, element.y, element.width, element.height);
-                }
-            } else if (element.type === 'goal') {
-                // No sprite provided for goal, draw as color
-                ctx.fillStyle = element.color;
-                ctx.fillRect(elementScreenX, element.y, element.width, element.height);
-            } else {
-                // Fallback for any other types or if images aren't loaded
-                ctx.fillStyle = element.color;
-                ctx.fillRect(elementScreenX, element.y, element.width, element.height);
-            }
+            // Use fillRect for all elements as sprites are removed
+            ctx.fillStyle = element.color;
+            ctx.fillRect(elementScreenX, element.y, element.width, element.height);
         }
     }
 
     // Draw the player (always on top)
-    if (playerImage.complete && playerImage.naturalHeight !== 0) {
-        ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
-    } else {
-        ctx.fillStyle = 'red'; // Fallback color
-        ctx.fillRect(player.x, player.y, player.width, player.height);
-    }
+    ctx.fillStyle = 'red'; // Fallback color for player
+    ctx.fillRect(player.x, player.y, player.width, player.height);
 }
 
 /**
