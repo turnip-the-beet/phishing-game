@@ -23,9 +23,6 @@ const optionsContainer = document.getElementById('optionsContainer');
 const battleScreen = document.getElementById('battleScreen');
 const startBattleButton = document.getElementById('startBattleButton');
 
-// Get debug info element
-const debugInfo = document.getElementById('debugInfo'); // Added debug info element
-
 // Game constants and variables
 const GRAVITY = 0.05; // Reduced gravity for underwater feel
 const WATER_DRAG = 0.93; // How much velocity is retained each frame (0.93 = 7% drag)
@@ -735,8 +732,8 @@ function draw() {
     ctx.fillStyle = 'red'; // Color for the swimming guy
     ctx.fillRect(player.x, player.y, player.width, player.height);
 
-    // Debug info display (temporarily re-added)
-    debugInfo.textContent = `WorldX: ${Math.round(worldXOffset)} | WorldY: ${Math.round(worldYOffset)} | PlayerWorldY: ${Math.round(player.worldY)} | PlayerScreenY: ${Math.round(player.y)} | BattleState: ${battleState} | GameRunning: ${gameRunning}`;
+    // Debug info display
+    // debugInfo.textContent = `WorldX: ${Math.round(worldXOffset)} | WorldY: ${Math.round(worldYOffset)} | PlayerWorldY: ${Math.round(player.worldY)} | PlayerScreenY: ${Math.round(player.y)} | BattleState: ${battleState} | GameRunning: ${gameRunning}`;
 }
 
 /**
