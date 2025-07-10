@@ -43,11 +43,13 @@ let player = {
     isGrounded: true // Still useful for resting on floor/platforms
 };
 
-// Define enemy height and width based on new player size
-const ENEMY_HEIGHT = player.height + 20; // Fish might be slightly taller than player
-const ENEMY_WIDTH = 80; // Fish width
-const ENEMY_WALK_SPEED = 1; // How fast enemies roam
-const ENEMY_WALK_RANGE = 100; // How far enemies roam from their spawn point
+// Enemy (Fish) properties
+const MIN_FISH_SIZE = 50; // Minimum dimension for a fish (width/height)
+const MAX_FISH_SIZE = 100; // Maximum dimension for a fish
+const ENEMY_WALK_SPEED = 1.5; // How fast enemies roam horizontally
+const ENEMY_SWIM_SPEED = 1; // How fast enemies swim vertically
+const ENEMY_WALK_RANGE = 100; // How far enemies roam from their spawn X
+const ENEMY_SWIM_RANGE = 80; // How far enemies swim from their spawn Y
 
 // Platform dimensions (for underwater structures like coral/rocks)
 const PLATFORM_HEIGHT = 30; // Platform height
@@ -147,18 +149,31 @@ const phishingQuestions = [
 const levels = [
     {
         levelNumber: 1,
-        levelLength: 2000, // Shorter for first level
-        enemyPositions: [600, 1200, 1800],
+        levelLength: 2500, // Shorter for first level
+        enemySpawnPoints: [ // Array of objects for more control over enemy placement
+            { x: 600, y: 150, rangeX: 80, rangeY: 50 },
+            { x: 1000, y: 250, rangeX: 100, rangeY: 60 },
+            { x: 1500, y: 100, rangeX: 70, rangeY: 40 },
+            { x: 2000, y: 200, rangeX: 90, rangeY: 55 }
+        ],
         platformPositions: [
             { x: 300, yOffset: 60, width: PLATFORM_WIDTH_BASE },
             { x: 900, yOffset: 90, width: PLATFORM_WIDTH_BASE + 20 }
         ],
-        minQuestionDifficulty: 1 // Only questions with difficulty 1
+        minQuestionDifficulty: 1
     },
     {
         levelNumber: 2,
-        levelLength: 3500, // Medium length
-        enemyPositions: [400, 1000, 1700, 2500, 3200],
+        levelLength: 4000, // Medium length
+        enemySpawnPoints: [
+            { x: 400, y: 100, rangeX: 70, rangeY: 40 },
+            { x: 850, y: 200, rangeX: 120, rangeY: 70 },
+            { x: 1300, y: 150, rangeX: 90, rangeY: 50 },
+            { x: 1800, y: 280, rangeX: 110, rangeY: 65 },
+            { x: 2300, y: 120, rangeX: 80, rangeY: 45 },
+            { x: 2800, y: 220, rangeX: 100, rangeY: 60 },
+            { x: 3400, y: 170, rangeX: 130, rangeY: 75 }
+        ],
         platformPositions: [
             { x: 200, yOffset: 70, width: PLATFORM_WIDTH_BASE - 20 },
             { x: 700, yOffset: 100, width: PLATFORM_WIDTH_BASE + 30 },
@@ -166,12 +181,24 @@ const levels = [
             { x: 2000, yOffset: 110, width: PLATFORM_WIDTH_BASE + 40 },
             { x: 2800, yOffset: 80, width: PLATFORM_WIDTH_BASE - 10 }
         ],
-        minQuestionDifficulty: 2 // Questions with difficulty 2 or higher
+        minQuestionDifficulty: 2
     },
     {
         levelNumber: 3,
-        levelLength: 5000, // Longer level
-        enemyPositions: [500, 1100, 1700, 2300, 2900, 3500, 4100, 4700],
+        levelLength: 6000, // Longer level
+        enemySpawnPoints: [
+            { x: 500, y: 100, rangeX: 90, rangeY: 50 },
+            { x: 900, y: 250, rangeX: 140, rangeY: 80 },
+            { x: 1400, y: 150, rangeX: 100, rangeY: 55 },
+            { x: 1900, y: 300, rangeX: 150, rangeY: 90 },
+            { x: 2400, y: 120, rangeX: 110, rangeY: 60 },
+            { x: 2900, y: 270, rangeX: 160, rangeY: 95 },
+            { x: 3400, y: 180, rangeX: 120, rangeY: 65 },
+            { x: 3900, y: 320, rangeX: 170, rangeY: 100 },
+            { x: 4400, y: 130, rangeX: 130, rangeY: 70 },
+            { x: 4900, y: 290, rangeX: 180, rangeY: 105 },
+            { x: 5400, y: 160, rangeX: 140, rangeY: 80 }
+        ],
         platformPositions: [
             { x: 300, yOffset: 80, width: PLATFORM_WIDTH_BASE },
             { x: 800, yOffset: 120, width: PLATFORM_WIDTH_BASE + 50 },
@@ -182,7 +209,7 @@ const levels = [
             { x: 3900, yOffset: 70, width: PLATFORM_WIDTH_BASE - 30 },
             { x: 4500, yOffset: 110, width: PLATFORM_WIDTH_BASE + 10 }
         ],
-        minQuestionDifficulty: 3 // Only questions with difficulty 3
+        minQuestionDifficulty: 3
     }
 ];
 
@@ -248,7 +275,7 @@ function showBattleScreen(enemy) {
     keys.left = false;
     keys.right = false;
     keys.up = false;
-    keys.down = false; // Reset down key too
+    keys.down = false;
 
     // Select 3 random questions for this battle based on current level's difficulty
     currentBattleQuestions = [];
@@ -315,7 +342,7 @@ function battleWon() {
     keys.left = false;
     keys.right = false;
     keys.up = false;
-    keys.down = false; // Reset down key too
+    keys.down = false;
 
     // Show the success message after the battle state is fully reset
     showMessageBox("You defeated the enemy!", null); // No specific callback needed for this final message
@@ -354,22 +381,29 @@ function initializeBackground() {
     backgroundElements.push({ type: 'cloud', originalX: currentLevelLength * 0.8, y: canvas.height * 0.25, width: 30, height: 30, color: 'rgba(255,255,255,0.55)', parallaxFactor: 0.1 });
 
 
-    // Define enemy Y position (fish will float above ground)
-    const ENEMY_Y_POSITION = canvas.height - GROUND_HEIGHT - ENEMY_HEIGHT - 30; // 30px above ground
-
     // Add enemies (fish) based on current level data
-    levelData.enemyPositions.forEach(pos => {
+    levelData.enemySpawnPoints.forEach(spawn => {
+        const fishWidth = MIN_FISH_SIZE + Math.random() * (MAX_FISH_SIZE - MIN_FISH_SIZE);
+        const fishHeight = MIN_FISH_SIZE + Math.random() * (MAX_FISH_SIZE - MIN_FISH_SIZE);
+        // Ensure fish spawn within canvas height, not below ground
+        const initialY = Math.max(0, Math.min(spawn.y, canvas.height - GROUND_HEIGHT - fishHeight));
+
         backgroundElements.push({
             type: 'enemy',
-            originalX: pos,
-            y: ENEMY_Y_POSITION, // Position enemies (fish) above the ground
-            width: ENEMY_WIDTH,
-            height: ENEMY_HEIGHT,
+            originalX: spawn.x,
+            y: initialY, // Initial Y position for fish
+            width: fishWidth,
+            height: fishHeight,
             color: '#FF4500', // Orange-red for fish
             parallaxFactor: 1,
             active: true, // Enemies are active until defeated
-            spawnX: pos, // Store original spawn X for roaming
-            walkDirection: 1, // 1 for right, -1 for left
+            spawnX: spawn.x, // Store original spawn X for roaming
+            spawnY: initialY, // Store original spawn Y for roaming
+            walkDirection: (Math.random() < 0.5 ? 1 : -1), // Random initial horizontal direction
+            swimDirectionY: (Math.random() < 0.5 ? 1 : -1), // Random initial vertical direction
+            // Use specific ranges for this enemy if provided, otherwise fallback to global constants
+            walkRangeX: spawn.rangeX || ENEMY_WALK_RANGE,
+            swimRangeY: spawn.rangeY || ENEMY_SWIM_RANGE
         });
     });
 
@@ -422,6 +456,9 @@ function update() {
 
     // Apply water drag to vertical velocity
     player.velocityY *= WATER_DRAG;
+    // Apply water drag to horizontal movement (if player moves independently)
+    // For now, player horizontal is based on key press, not velocity.
+    // If you add player horizontal velocity later, apply drag there too.
 
     player.y += player.velocityY;
 
@@ -455,12 +492,15 @@ function update() {
     if (battleState === 'idle') { // Enemies only move when not in battle
         backgroundElements.forEach(element => {
             if (element.type === 'enemy' && element.active) {
-                // Move enemy
+                // Horizontal movement
                 element.originalX += element.walkDirection * ENEMY_WALK_SPEED;
 
-                // Check boundaries and reverse direction
-                const minX = element.spawnX - ENEMY_WALK_RANGE;
-                const maxX = element.spawnX + ENEMY_WALK_RANGE;
+                // Vertical movement
+                element.y += element.swimDirectionY * ENEMY_SWIM_SPEED;
+
+                // Check horizontal boundaries and reverse direction
+                const minX = element.spawnX - element.walkRangeX;
+                const maxX = element.spawnX + element.walkRangeX;
 
                 if (element.originalX <= minX) {
                     element.originalX = minX; // Snap to boundary
@@ -468,6 +508,18 @@ function update() {
                 } else if (element.originalX >= maxX) {
                     element.originalX = maxX; // Snap to boundary
                     element.walkDirection = -1; // Change to move left
+                }
+
+                // Check vertical boundaries and reverse direction
+                const minY = Math.max(0, element.spawnY - element.swimRangeY); // Don't swim above ocean surface
+                const maxY = Math.min(canvas.height - GROUND_HEIGHT - element.height, element.spawnY + element.swimRangeY); // Don't swim into seabed
+
+                if (element.y <= minY) {
+                    element.y = minY;
+                    element.swimDirectionY = 1; // Change to swim down
+                } else if (element.y >= maxY) {
+                    element.y = maxY;
+                    element.swimDirectionY = -1; // Change to swim up
                 }
             }
         });
@@ -510,10 +562,8 @@ function update() {
 
                 if (overlapX < overlapY) { // Horizontal collision is smaller, so it's a side collision
                     if (player.x < elementScreenX) { // Player hit from left
-                        // Adjust player's X to be just outside the platform
                         player.x = elementScreenX - player.width;
-                        // Stop horizontal movement relative to the world
-                        // (This is implicitly handled by not changing worldXOffset if collision prevents it)
+                        // Stop horizontal movement relative to the world (no velocity in this game)
                     } else { // Player hit from right
                         player.x = elementScreenX + element.width;
                     }
@@ -624,7 +674,7 @@ function resetLevel() {
     keys.left = false;
     keys.right = false;
     keys.up = false;
-    keys.down = false; // Reset down key
+    keys.down = false;
 
     initializeBackground(); // Re-initialize background elements for the current level
     gameRunning = true; // Ensure game is running
