@@ -288,8 +288,8 @@ function showMessageBox(message, callback) {
         if (callback) {
             callback();
         }
-        // Only resume game if it's not game over and not in an active battle
-        if (!gameOver && battleState === 'idle') {
+        // Always resume game unless it's a permanent game over
+        if (!gameOver) {
             gameRunning = true;
         }
     };
@@ -415,15 +415,7 @@ function battleWon() {
     keys.down = false;
 
     // Show the success message after the battle state is fully reset
-    showMessageBox("You defeated the enemy!", () => {
-        console.log("Battle won, gameRunning set to true, battleState is idle.");
-        // Log active states of all enemies after battle won and game resumes
-        backgroundElements.forEach(el => {
-            if (el.type === 'enemy') {
-                console.log(`Enemy at worldX ${el.originalX} active: ${el.active}`);
-            }
-        });
-    });
+    showMessageBox("You defeated the enemy!", null); // No specific callback needed for this final message
 }
 
 /**
