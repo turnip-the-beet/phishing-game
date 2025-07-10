@@ -26,37 +26,40 @@ const startBattleButton = document.getElementById('startBattleButton');
 // Game constants and variables
 const GRAVITY = 0.05; // Reduced gravity for underwater feel
 const WATER_DRAG = 0.93; // How much velocity is retained each frame (0.93 = 7% drag)
-const SWIM_THRUST = 0.8; // Force applied when swimming up/down
-const PLAYER_SPEED = 5; // Horizontal movement speed of the player
+const SWIM_THRUST = 1.5; // Increased Force applied when swimming up/down
+const PLAYER_SPEED = 8; // Increased Horizontal movement speed of the player
 
 const GROUND_HEIGHT = 50; // Height of the ocean floor
 const PLAYER_SCREEN_X = 150; // Player's fixed X position on the screen (relative to canvas)
 const QUESTIONS_PER_BATTLE = 3; // Number of questions to answer correctly in a row per battle
 
-// Player object - now `x` is its screen position, `worldX` is its position in the game world
+// Player object - now `x` is its screen position, `worldX` is its actual world position
 let player = {
-    x: PLAYER_SCREEN_X,
-    y: 0, // Will be set in resizeCanvas/resetGame
+    x: PLAYER_SCREEN_X, // Player's screen X position (fixed)
+    y: 0, // Player's screen Y position (will be updated by camera)
+    worldX: PLAYER_SCREEN_X, // Player's actual world X position
+    worldY: 0, // Player's actual world Y position
     width: 60, // Player width
     height: 60, // Player height
     velocityY: 0,
-    isGrounded: true // Still useful for resting on floor/platforms
+    isGrounded: false // Player starts floating
 };
 
 // Enemy (Fish) properties
 const MIN_FISH_SIZE = 50; // Minimum dimension for a fish (width/height)
 const MAX_FISH_SIZE = 100; // Maximum dimension for a fish
-const ENEMY_WALK_SPEED = 1.5; // How fast enemies roam horizontally
-const ENEMY_SWIM_SPEED = 1; // How fast enemies swim vertically
-const ENEMY_WALK_RANGE = 100; // How far enemies roam from their spawn X
-const ENEMY_SWIM_RANGE = 80; // How far enemies swim from their spawn Y
+const ENEMY_CHASE_SPEED = 3; // How fast enemies move towards player
+const ENEMY_DETECTION_RADIUS = 500; // How close player needs to be for enemy to start chasing
 
 // Platform dimensions (for underwater structures like coral/rocks)
 const PLATFORM_HEIGHT = 30; // Platform height
 const PLATFORM_WIDTH_BASE = 120; // Base platform width
 
-// Tracks the horizontal scroll offset of the game world
-let worldXOffset = 0;
+// Camera variables
+let worldXOffset = 0; // Horizontal scroll offset of the game world
+let worldYOffset = 0; // Vertical scroll offset of the game world
+const PLAYER_SCREEN_Y_CENTER = 0.5; // Player's target Y position on screen (0.5 = center)
+const PLAYER_VERTICAL_DEADZONE = 50; // How far player can move vertically before camera adjusts
 
 // Background elements - now store `originalX` for world coordinates and `parallaxFactor`
 let backgroundElements = [];
@@ -149,65 +152,123 @@ const phishingQuestions = [
 const levels = [
     {
         levelNumber: 1,
-        levelLength: 2500, // Shorter for first level
+        levelLength: 4000, // Increased length
         enemySpawnPoints: [ // Array of objects for more control over enemy placement
-            { x: 600, y: 150, rangeX: 80, rangeY: 50 },
-            { x: 1000, y: 250, rangeX: 100, rangeY: 60 },
-            { x: 1500, y: 100, rangeX: 70, rangeY: 40 },
-            { x: 2000, y: 200, rangeX: 90, rangeY: 55 }
+            { x: 600, y: 150 }, { x: 900, y: 280 }, { x: 1300, y: 100 }, { x: 1700, y: 220 },
+            { x: 2200, y: 180 }, { x: 2700, y: 80 }, { x: 3200, y: 200 }, { x: 3700, y: 140 }
         ],
         platformPositions: [
+            // Start area
             { x: 300, yOffset: 60, width: PLATFORM_WIDTH_BASE },
-            { x: 900, yOffset: 90, width: PLATFORM_WIDTH_BASE + 20 }
+            // First chamber/hall
+            { x: 700, yOffset: 150, width: PLATFORM_WIDTH_BASE + 80 }, // Ceiling
+            { x: 700, yOffset: -50, width: PLATFORM_WIDTH_BASE + 80 }, // Floor (negative yOffset means it's above the default ground height)
+            { x: 1000, yOffset: 100, width: 30, height: 150 }, // Vertical wall
+            // Second chamber/hall
+            { x: 1200, yOffset: 70, width: PLATFORM_WIDTH_BASE + 50 }, // Ceiling
+            { x: 1200, yOffset: -30, width: PLATFORM_WIDTH_BASE + 50 }, // Floor
+            { x: 1600, yOffset: 120, width: 30, height: 100 }, // Vertical wall
+            // Open area with floating platforms
+            { x: 1900, yOffset: 80, width: PLATFORM_WIDTH_BASE - 20 },
+            { x: 2300, yOffset: 130, width: PLATFORM_WIDTH_BASE + 10 },
+            // Third chamber/hall
+            { x: 2700, yOffset: 100, width: PLATFORM_WIDTH_BASE + 100 }, // Ceiling
+            { x: 2700, yOffset: -10, width: PLATFORM_WIDTH_BASE + 100 }, // Floor
+            { x: 3150, yOffset: 50, width: 30, height: 180 }, // Vertical wall
+            // End area
+            { x: 3500, yOffset: 70, width: PLATFORM_WIDTH_BASE }
         ],
         minQuestionDifficulty: 1
     },
     {
         levelNumber: 2,
-        levelLength: 4000, // Medium length
+        levelLength: 6000, // Increased length
         enemySpawnPoints: [
-            { x: 400, y: 100, rangeX: 70, rangeY: 40 },
-            { x: 850, y: 200, rangeX: 120, rangeY: 70 },
-            { x: 1300, y: 150, rangeX: 90, rangeY: 50 },
-            { x: 1800, y: 280, rangeX: 110, rangeY: 65 },
-            { x: 2300, y: 120, rangeX: 80, rangeY: 45 },
-            { x: 2800, y: 220, rangeX: 100, rangeY: 60 },
-            { x: 3400, y: 170, rangeX: 130, rangeY: 75 }
+            { x: 400, y: 100 },
+            { x: 750, y: 250 },
+            { x: 1200, y: 180 },
+            { x: 1600, y: 300 },
+            { x: 2100, y: 120 },
+            { x: 2600, y: 270 },
+            { x: 3100, y: 150 },
+            { x: 3600, y: 320 },
+            { x: 4100, y: 100 },
+            { x: 4600, y: 280 },
+            { x: 5100, y: 190 },
+            { x: 5600, y: 310 }
         ],
         platformPositions: [
+            // Start area
             { x: 200, yOffset: 70, width: PLATFORM_WIDTH_BASE - 20 },
-            { x: 700, yOffset: 100, width: PLATFORM_WIDTH_BASE + 30 },
-            { x: 1400, yOffset: 60, width: PLATFORM_WIDTH_BASE },
-            { x: 2000, yOffset: 110, width: PLATFORM_WIDTH_BASE + 40 },
-            { x: 2800, yOffset: 80, width: PLATFORM_WIDTH_BASE - 10 }
+            // Complex Chamber 1
+            { x: 500, yOffset: 180, width: PLATFORM_WIDTH_BASE + 100 }, // Ceiling
+            { x: 500, yOffset: -50, width: PLATFORM_WIDTH_BASE + 100 }, // Floor
+            { x: 800, yOffset: 80, width: 30, height: 200 }, // Wall 1
+            { x: 950, yOffset: 100, width: 30, height: 150 }, // Wall 2 (gap in between)
+            // Hallway with floating platforms
+            { x: 1200, yOffset: 90, width: PLATFORM_WIDTH_BASE },
+            { x: 1500, yOffset: 140, width: PLATFORM_WIDTH_BASE + 20 },
+            { x: 1800, yOffset: 80, width: PLATFORM_WIDTH_BASE - 30 },
+            // Chamber 2
+            { x: 2200, yOffset: 160, width: PLATFORM_WIDTH_BASE + 120 }, // Ceiling
+            { x: 2200, yOffset: -80, width: PLATFORM_WIDTH_BASE + 120 }, // Floor
+            { x: 2600, yOffset: 60, width: 30, height: 220 }, // Wall 1
+            { x: 2800, yOffset: 100, width: 30, height: 180 }, // Wall 2
+            // More open area
+            { x: 3200, yOffset: 110, width: PLATFORM_WIDTH_BASE + 40 },
+            { x: 3700, yOffset: 60, width: PLATFORM_WIDTH_BASE - 10 },
+            // Final long hall
+            { x: 4200, yOffset: 140, width: PLATFORM_WIDTH_BASE + 200 }, // Ceiling
+            { x: 4200, yOffset: -20, width: PLATFORM_WIDTH_BASE + 200 }, // Floor
+            { x: 4800, yOffset: 70, width: 30, height: 190 }, // Wall
+            { x: 5200, yOffset: 110, width: 30, height: 160 }, // Wall
+            // End area
+            { x: 5500, yOffset: 90, width: PLATFORM_WIDTH_BASE + 50 }
         ],
         minQuestionDifficulty: 2
     },
     {
         levelNumber: 3,
-        levelLength: 6000, // Longer level
+        levelLength: 8000, // Even longer and more complex
         enemySpawnPoints: [
-            { x: 500, y: 100, rangeX: 90, rangeY: 50 },
-            { x: 900, y: 250, rangeX: 140, rangeY: 80 },
-            { x: 1400, y: 150, rangeX: 100, rangeY: 55 },
-            { x: 1900, y: 300, rangeX: 150, rangeY: 90 },
-            { x: 2400, y: 120, rangeX: 110, rangeY: 60 },
-            { x: 2900, y: 270, rangeX: 160, rangeY: 95 },
-            { x: 3400, y: 180, rangeX: 120, rangeY: 65 },
-            { x: 3900, y: 320, rangeX: 170, rangeY: 100 },
-            { x: 4400, y: 130, rangeX: 130, rangeY: 70 },
-            { x: 4900, y: 290, rangeX: 180, rangeY: 105 },
-            { x: 5400, y: 160, rangeX: 140, rangeY: 80 }
+            { x: 500, y: 100 }, { x: 800, y: 280 }, { x: 1200, y: 150 }, { x: 1600, y: 300 },
+            { x: 2000, y: 120 }, { x: 2400, y: 270 }, { x: 2800, y: 180 }, { x: 3200, y: 320 },
+            { x: 3600, y: 100 }, { x: 4000, y: 250 }, { x: 4400, y: 150 }, { x: 4800, y: 300 },
+            { x: 5200, y: 120 }, { x: 5600, y: 270 }, { x: 6000, y: 180 }, { x: 6400, y: 320 },
+            { x: 6800, y: 100 }, { x: 7200, y: 250 }, { x: 7600, y: 150 }
         ],
         platformPositions: [
+            // Start area
             { x: 300, yOffset: 80, width: PLATFORM_WIDTH_BASE },
-            { x: 800, yOffset: 120, width: PLATFORM_WIDTH_BASE + 50 },
-            { x: 1400, yOffset: 70, width: PLATFORM_WIDTH_BASE - 10 },
-            { x: 2000, yOffset: 100, width: PLATFORM_WIDTH_BASE + 20 },
-            { x: 2600, yOffset: 90, width: PLATFORM_WIDTH_BASE },
-            { x: 3200, yOffset: 130, width: PLATFORM_WIDTH_BASE + 60 },
-            { x: 3900, yOffset: 70, width: PLATFORM_WIDTH_BASE - 30 },
-            { x: 4500, yOffset: 110, width: PLATFORM_WIDTH_BASE + 10 }
+            // Long winding path with varying heights
+            { x: 600, yOffset: 150, width: PLATFORM_WIDTH_BASE + 50 },
+            { x: 600, yOffset: -30, width: PLATFORM_WIDTH_BASE + 50 }, // Floor
+            { x: 900, yOffset: 100, width: 30, height: 180 }, // Wall
+            { x: 1100, yOffset: 180, width: PLATFORM_WIDTH_BASE + 80 }, // Ceiling
+            { x: 1100, yOffset: -60, width: PLATFORM_WIDTH_BASE + 80 }, // Floor
+            { x: 1500, yOffset: 120, width: 30, height: 200 }, // Wall
+            { x: 1700, yOffset: 100, width: PLATFORM_WIDTH_BASE + 20 },
+            { x: 2000, yOffset: 160, width: PLATFORM_WIDTH_BASE + 70 }, // Ceiling
+            { x: 2000, yOffset: -40, width: PLATFORM_WIDTH_BASE + 70 }, // Floor
+            { x: 2400, yOffset: 110, width: 30, height: 190 }, // Wall
+            // More open section with scattered platforms
+            { x: 2800, yOffset: 90, width: PLATFORM_WIDTH_BASE + 10 },
+            { x: 3300, yOffset: 140, width: PLATFORM_WIDTH_BASE + 30 },
+            { x: 3800, yOffset: 70, width: PLATFORM_WIDTH_BASE - 20 },
+            { x: 4300, yOffset: 120, width: PLATFORM_WIDTH_BASE + 40 },
+            // Long narrow passage
+            { x: 4800, yOffset: 150, width: PLATFORM_WIDTH_BASE + 200 }, // Ceiling
+            { x: 4800, yOffset: -50, width: PLATFORM_WIDTH_BASE + 200 }, // Floor
+            { x: 5300, yOffset: 80, width: 30, height: 220 }, // Wall
+            { x: 5600, yOffset: 100, width: 30, height: 200 }, // Wall
+            // Final challenging chamber
+            { x: 6000, yOffset: 180, width: PLATFORM_WIDTH_BASE + 150 }, // Ceiling
+            { x: 6000, yOffset: -70, width: PLATFORM_WIDTH_BASE + 150 }, // Floor
+            { x: 6500, yOffset: 60, width: 30, height: 250 }, // Wall
+            { x: 6800, yOffset: 100, width: 30, height: 200 }, // Wall
+            { x: 7100, yOffset: 70, width: 30, height: 230 }, // Wall
+            // Final approach
+            { x: 7500, yOffset: 90, width: PLATFORM_WIDTH_BASE + 50 }
         ],
         minQuestionDifficulty: 3
     }
@@ -397,13 +458,8 @@ function initializeBackground() {
             color: '#FF4500', // Orange-red for fish
             parallaxFactor: 1,
             active: true, // Enemies are active until defeated
-            spawnX: spawn.x, // Store original spawn X for roaming
-            spawnY: initialY, // Store original spawn Y for roaming
-            walkDirection: (Math.random() < 0.5 ? 1 : -1), // Random initial horizontal direction
-            swimDirectionY: (Math.random() < 0.5 ? 1 : -1), // Random initial vertical direction
-            // Use specific ranges for this enemy if provided, otherwise fallback to global constants
-            walkRangeX: spawn.rangeX || ENEMY_WALK_RANGE,
-            swimRangeY: spawn.rangeY || ENEMY_SWIM_RANGE
+            spawnX: spawn.x, // Store original spawn X for chasing (not roaming)
+            spawnY: initialY, // Store original spawn Y for chasing (not roaming)
         });
     });
 
@@ -460,21 +516,38 @@ function update() {
     // For now, player horizontal is based on key press, not velocity.
     // If you add player horizontal velocity later, apply drag there too.
 
-    player.y += player.velocityY;
+    // Update player's worldY position based on velocity
+    player.worldY += player.velocityY;
 
-    // Keep player within vertical bounds (ocean surface and floor)
-    if (player.y < 0) {
-        player.y = 0;
+    // Keep player within vertical world bounds (ocean surface and floor)
+    const maxPlayerWorldY = canvas.height - GROUND_HEIGHT - player.height;
+    if (player.worldY < 0) {
+        player.worldY = 0;
         player.velocityY = 0;
     }
-    // Player collision with ocean floor
-    if (player.y + player.height > canvas.height - GROUND_HEIGHT) {
-        player.y = canvas.height - GROUND_HEIGHT - player.height;
+    if (player.worldY > maxPlayerWorldY) {
+        player.worldY = maxPlayerWorldY;
         player.velocityY = 0;
         player.isGrounded = true; // Player is resting on the floor
     } else {
         player.isGrounded = false; // Player is floating
     }
+
+    // Camera vertical adjustment (keeps player centered vertically)
+    const targetScreenY = canvas.height * PLAYER_SCREEN_Y_CENTER;
+    const currentScreenY = player.worldY - worldYOffset;
+
+    if (currentScreenY < targetScreenY - PLAYER_VERTICAL_DEADZONE) {
+        worldYOffset = player.worldY - (targetScreenY - PLAYER_VERTICAL_DEADZONE);
+    } else if (currentScreenY > targetScreenY + PLAYER_VERTICAL_DEADZONE) {
+        worldYOffset = player.worldY - (targetScreenY + PLAYER_VERTICAL_DEADZONE);
+    }
+
+    // Clamp worldYOffset to prevent camera from going beyond world boundaries
+    // The maximum worldYOffset is when the bottom of the visible canvas aligns with the seabed.
+    // The minimum worldYOffset is 0 (when the top of the world is at the top of the canvas).
+    const maxWorldYOffset = canvas.height - (canvas.height - GROUND_HEIGHT); // This is GROUND_HEIGHT
+    worldYOffset = Math.max(0, Math.min(maxWorldYOffset, worldYOffset));
 
 
     // Handle horizontal movement and world scrolling
@@ -484,42 +557,36 @@ function update() {
             worldXOffset = Math.max(0, worldXOffset - PLAYER_SPEED);
         } else if (keys.right) {
             const currentLevel = levels[currentLevelIndex];
-            worldXOffset = Math.min(currentLevel.levelLength - canvas.width + PLAYER_SCREEN_X, worldXOffset + PLAYER_SPEED);
+            // Ensure worldXOffset doesn't go past the end of the level
+            const maxWorldXOffset = currentLevel.levelLength - canvas.width + PLAYER_SCREEN_X;
+            worldXOffset = Math.min(maxWorldXOffset, worldXOffset + PLAYER_SPEED);
         }
     }
 
-    // Update enemy movement
+    // Update enemy movement (chasing logic)
     if (battleState === 'idle') { // Enemies only move when not in battle
         backgroundElements.forEach(element => {
             if (element.type === 'enemy' && element.active) {
-                // Horizontal movement
-                element.originalX += element.walkDirection * ENEMY_WALK_SPEED;
+                // Get enemy's current screen position for chasing calculation
+                const enemyWorldX = element.originalX; // Enemy world X
+                const enemyWorldY = element.y; // Enemy world Y
 
-                // Vertical movement
-                element.y += element.swimDirectionY * ENEMY_SWIM_SPEED;
+                // Calculate distance to player in world coordinates
+                const dx = (player.worldX + player.width / 2) - (enemyWorldX + element.width / 2);
+                const dy = (player.worldY + player.height / 2) - (enemyWorldY + element.height / 2);
+                const distance = Math.sqrt(dx * dx + dy * dy);
 
-                // Check horizontal boundaries and reverse direction
-                const minX = element.spawnX - element.walkRangeX;
-                const maxX = element.spawnX + element.walkRangeX;
+                // Only chase if player is within detection radius
+                if (distance < ENEMY_DETECTION_RADIUS && distance > 0) {
+                    // Normalize direction vector and apply speed
+                    const moveX = (dx / distance) * ENEMY_CHASE_SPEED;
+                    const moveY = (dy / distance) * ENEMY_CHASE_SPEED;
 
-                if (element.originalX <= minX) {
-                    element.originalX = minX; // Snap to boundary
-                    element.walkDirection = 1; // Change to move right
-                } else if (element.originalX >= maxX) {
-                    element.originalX = maxX; // Snap to boundary
-                    element.walkDirection = -1; // Change to move left
-                }
+                    element.originalX += moveX;
+                    element.y += moveY;
 
-                // Check vertical boundaries and reverse direction
-                const minY = Math.max(0, element.spawnY - element.swimRangeY); // Don't swim above ocean surface
-                const maxY = Math.min(canvas.height - GROUND_HEIGHT - element.height, element.spawnY + element.swimRangeY); // Don't swim into seabed
-
-                if (element.y <= minY) {
-                    element.y = minY;
-                    element.swimDirectionY = 1; // Change to swim down
-                } else if (element.y >= maxY) {
-                    element.y = maxY;
-                    element.swimDirectionY = -1; // Change to swim up
+                    // Keep enemy within vertical bounds (ocean surface and seabed)
+                    element.y = Math.max(0, Math.min(canvas.height - GROUND_HEIGHT - element.height, element.y));
                 }
             }
         });
@@ -531,17 +598,18 @@ function update() {
         const element = backgroundElements[i];
 
         // Calculate element's current screen position based on its world position and scroll offset
-        const elementScreenX = element.originalX - worldXOffset * element.parallaxFactor;
+        const elementWorldX = element.originalX;
+        const elementWorldY = element.y;
 
         // Only check collisions with active elements and if not in battle for enemies
         if (!element.active) continue;
 
         // Player collision with enemy (only if not in battle)
         if (element.type === 'enemy' && battleState === 'idle') {
-            if (player.x < elementScreenX + element.width &&
-                player.x + player.width > elementScreenX &&
-                player.y < element.y + element.height &&
-                player.y + player.height > element.y) {
+            if (player.worldX < elementWorldX + element.width &&
+                player.worldX + player.width > elementWorldX &&
+                player.worldY < elementWorldY + element.height &&
+                player.worldY + player.height > elementWorldY) {
 
                 // Collision with an enemy, initiate battle
                 showBattleScreen(element);
@@ -551,29 +619,35 @@ function update() {
         // Player collision with platform (now solid from all sides)
         else if (element.type === 'platform') {
             // Check for general AABB collision
-            if (player.x < elementScreenX + element.width &&
-                player.x + player.width > elementScreenX &&
-                player.y < element.y + element.height &&
-                player.y + player.height > element.y) {
+            if (player.worldX < elementWorldX + element.width &&
+                player.worldX + player.width > elementWorldX &&
+                player.worldY < elementWorldY + element.height &&
+                player.worldY + player.height > elementWorldY) {
 
                 // Determine collision side to resolve
-                const overlapX = Math.min(player.x + player.width, elementScreenX + element.width) - Math.max(player.x, elementScreenX);
-                const overlapY = Math.min(player.y + player.height, element.y + element.height) - Math.max(player.y, element.y);
+                const overlapX = Math.min(player.worldX + player.width, elementWorldX + element.width) - Math.max(player.worldX, elementWorldX);
+                const overlapY = Math.min(player.worldY + player.height, elementWorldY + element.height) - Math.max(player.worldY, elementWorldY);
 
                 if (overlapX < overlapY) { // Horizontal collision is smaller, so it's a side collision
-                    if (player.x < elementScreenX) { // Player hit from left
-                        player.x = elementScreenX - player.width;
-                        // Stop horizontal movement relative to the world (no velocity in this game)
-                    } else { // Player hit from right
-                        player.x = elementScreenX + element.width;
+                    // If player is trying to move right and hits left side of platform
+                    if (keys.right && player.worldX < elementWorldX) {
+                        // Adjust worldXOffset to block movement, based on player's screen X
+                        worldXOffset = elementWorldX - player.x; // worldXOffset = elementWorldX - player.screenX
+                        player.worldX = elementWorldX - player.width; // Snap player worldX to edge
+                    }
+                    // If player is trying to move left and hits right side of platform
+                    else if (keys.left && player.worldX > elementWorldX) {
+                        // Adjust worldXOffset to block movement, based on player's screen X
+                        worldXOffset = elementWorldX + element.width - player.x; // worldXOffset = elementWorldX + element.width - player.screenX
+                        player.worldX = elementWorldX + element.width; // Snap player worldX to edge
                     }
                 } else { // Vertical collision is smaller, so it's a top/bottom collision
-                    if (player.y < element.y) { // Player hit from top (landing on platform)
-                        player.y = element.y - player.height;
+                    if (player.worldY < elementWorldY) { // Player hit from top (landing on platform)
+                        player.worldY = elementWorldY - player.height;
                         player.velocityY = 0;
                         player.isGrounded = true; // Player is resting on platform
                     } else { // Player hit from bottom (bumping head on platform)
-                        player.y = element.y + element.height;
+                        player.worldY = elementWorldY + element.height;
                         player.velocityY = 0; // Stop upward movement
                     }
                 }
@@ -583,7 +657,7 @@ function update() {
 
     // Win condition for current level: Check if the player has scrolled past the goal
     const currentLevel = levels[currentLevelIndex];
-    const playerWorldX = PLAYER_SCREEN_X + worldXOffset;
+    const playerWorldX = player.worldX; // Player's actual world X
     const goalElement = backgroundElements.find(el => el.type === 'goal');
 
     if (goalElement && playerWorldX > goalElement.originalX + goalElement.width && !goalReached) {
@@ -619,18 +693,22 @@ function draw() {
         // Only draw active elements (enemies, goals, platforms) or always draw ground/clouds
         if (!element.active && element.type !== 'ground' && element.type !== 'cloud' && element.type !== 'platform') continue;
 
-        // Calculate element's current screen position based on its world position and scroll offset
+        // Calculate element's current screen position based on its world position and camera offset
         const elementScreenX = element.originalX - worldXOffset * element.parallaxFactor;
+        const elementScreenY = element.y - worldYOffset * element.parallaxFactor;
 
         // Only draw elements that are within the visible canvas area
-        if (elementScreenX + element.width > 0 && elementScreenX < canvas.width) {
-            // Use fillRect for all elements as sprites are removed
+        if (elementScreenX + element.width > 0 && elementScreenX < canvas.width &&
+            elementScreenY + element.height > 0 && elementScreenY < canvas.height) {
+            
             ctx.fillStyle = element.color;
-            ctx.fillRect(elementScreenX, element.y, element.width, element.height);
+            ctx.fillRect(elementScreenX, elementScreenY, element.width, element.height);
         }
     }
 
-    // Draw the player (always on top)
+    // Draw the player (always on top, at its fixed screen X and calculated screen Y)
+    // Player's screen Y is its worldY minus the camera's worldYOffset
+    player.y = player.worldY - worldYOffset;
     ctx.fillStyle = 'red'; // Color for the swimming guy
     ctx.fillRect(player.x, player.y, player.width, player.height);
 }
@@ -657,9 +735,12 @@ function resetGame() {
  * Resets the current level's state (player position, world offset, re-initializes background).
  */
 function resetLevel() {
-    worldXOffset = 0; // Reset world scroll
-    // Player starts floating slightly above the seabed
-    player.y = canvas.height - GROUND_HEIGHT - player.height - 20; 
+    worldXOffset = 0; // Reset horizontal world scroll
+    worldYOffset = 0; // Reset vertical world scroll
+    
+    // Player starts floating slightly above the seabed, relative to world coordinates
+    player.worldX = PLAYER_SCREEN_X; // Reset player's world X
+    player.worldY = canvas.height - GROUND_HEIGHT - player.height - 20; 
     player.velocityY = 0;
     player.isGrounded = false; // Player starts floating
     gameOver = false;
@@ -786,7 +867,8 @@ function resizeCanvas() {
     canvas.height = rect.height;
 
     // Adjust player's initial Y position based on new canvas height
-    player.y = canvas.height - GROUND_HEIGHT - player.height;
+    // This will be handled by resetLevel, which uses player.worldY
+    // player.y = canvas.height - GROUND_HEIGHT - player.height; 
 
     // Re-initialize background elements with correct Y positions and new canvas width
     // This is important because level elements depend on canvas.height
