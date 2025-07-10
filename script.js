@@ -473,7 +473,7 @@ function initializeBackground() {
             y: initialY, // Initial Y position for fish
             width: fishWidth,
             height: fishHeight,
-            color: '#FF4500', // Orange-red for fish
+            color: '#FF4500', // Orange-red for fish (active)
             parallaxFactor: 1,
             active: true, // Enemies are active until defeated
             spawnX: spawn.x, // Store original spawn X for chasing (not roaming)
@@ -722,6 +722,10 @@ function draw() {
             elementScreenY + element.height > 0 && elementScreenY < canvas.height) {
             
             ctx.fillStyle = element.color;
+            // Apply visual cue for defeated enemies
+            if (element.type === 'enemy' && !element.active) {
+                ctx.fillStyle = 'rgba(128, 128, 128, 0.5)'; // Grey and semi-transparent
+            }
             ctx.fillRect(elementScreenX, elementScreenY, element.width, element.height);
         }
     }
@@ -731,9 +735,6 @@ function draw() {
     player.y = player.worldY - worldYOffset;
     ctx.fillStyle = 'red'; // Color for the swimming guy
     ctx.fillRect(player.x, player.y, player.width, player.height);
-
-    // Debug info display
-    // debugInfo.textContent = `WorldX: ${Math.round(worldXOffset)} | WorldY: ${Math.round(worldYOffset)} | PlayerWorldY: ${Math.round(player.worldY)} | PlayerScreenY: ${Math.round(player.y)} | BattleState: ${battleState} | GameRunning: ${gameRunning}`;
 }
 
 /**
@@ -834,28 +835,28 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
-// Touch/Click input for mobile controls
-leftButton.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameRunning) keys.left = true; });
-leftButton.addEventListener('touchend', (e) => { e.preventDefault(); if(gameRunning) keys.left = false; });
+// Touch/Click input for mobile controls (explicitly passive: false to avoid warnings)
+leftButton.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameRunning) keys.left = true; }, { passive: false });
+leftButton.addEventListener('touchend', (e) => { e.preventDefault(); if(gameRunning) keys.left = false; }, { passive: false });
 leftButton.addEventListener('mousedown', () => { if(gameRunning) keys.left = true; });
 leftButton.addEventListener('mouseup', () => { keys.left = false; });
 leftButton.addEventListener('mouseleave', () => { keys.left = false; }); // For mouse leaving button area
 
-rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameRunning) keys.right = true; });
-rightButton.addEventListener('touchend', (e) => { e.preventDefault(); if(gameRunning) keys.right = false; });
+rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameRunning) keys.right = true; }, { passive: false });
+rightButton.addEventListener('touchend', (e) => { e.preventDefault(); if(gameRunning) keys.right = false; }, { passive: false });
 rightButton.addEventListener('mousedown', () => { if(gameRunning) keys.right = true; });
 rightButton.addEventListener('mouseup', () => { keys.right = false; });
 rightButton.addEventListener('mouseleave', () => { keys.right = false; });
 
-jumpButton.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameRunning) keys.up = true; });
-jumpButton.addEventListener('touchend', (e) => { e.preventDefault(); if(gameRunning) keys.up = false; });
+jumpButton.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameRunning) keys.up = true; }, { passive: false });
+jumpButton.addEventListener('touchend', (e) => { e.preventDefault(); if(gameRunning) keys.up = false; }, { passive: false });
 jumpButton.addEventListener('mousedown', () => { if(gameRunning) keys.up = true; });
 jumpButton.addEventListener('mouseup', () => { keys.up = false; });
 jumpButton.addEventListener('mouseleave', () => { keys.up = false; });
 
-// New: Down button event listeners
-downButton.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameRunning) keys.down = true; });
-downButton.addEventListener('touchend', (e) => { e.preventDefault(); if(gameRunning) keys.down = false; });
+// New: Down button event listeners (explicitly passive: false)
+downButton.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameRunning) keys.down = true; }, { passive: false });
+downButton.addEventListener('touchend', (e) => { e.preventDefault(); if(gameRunning) keys.down = false; }, { passive: false });
 downButton.addEventListener('mousedown', () => { if(gameRunning) keys.down = true; });
 downButton.addEventListener('mouseup', () => { keys.down = false; });
 downButton.addEventListener('mouseleave', () => { keys.down = false; });
