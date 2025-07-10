@@ -327,6 +327,7 @@ function showQuestionBox(questionData, onAnswerCallback) {
  * @param {object} enemy - The enemy object that triggered the battle.
  */
 function showBattleScreen(enemy) {
+    console.log("showBattleScreen called. Enemy:", enemy);
     gameRunning = false; // Pause game
     battleState = 'active'; // Set battle state to active
     currentEnemy = enemy; // Store reference to the enemy
@@ -363,6 +364,7 @@ function showBattleScreen(enemy) {
  * Presents the next question in the battle sequence.
  */
 function presentNextQuestion() {
+    console.log("presentNextQuestion called. Current Question Index:", currentQuestionIndex, "Correct in row:", correctAnswersInRow);
     // If there are still questions left in the current battle set
     if (currentQuestionIndex < currentBattleQuestions.length) {
         const questionData = currentBattleQuestions[currentQuestionIndex];
@@ -370,6 +372,7 @@ function presentNextQuestion() {
             if (isCorrect) {
                 correctAnswersInRow++;
                 currentQuestionIndex++; // Move to the next question in the battle sequence
+                console.log("Answer correct. Correct in row:", correctAnswersInRow);
 
                 if (correctAnswersInRow === QUESTIONS_PER_BATTLE) {
                     // All questions answered correctly for this battle
@@ -381,6 +384,7 @@ function presentNextQuestion() {
                 }
             } else {
                 // Incorrect answer, battle lost
+                console.log("Answer incorrect. Game Over.");
                 gameOver = true;
                 showMessageBox(`Incorrect! The enemy defeated you. \n\nExplanation: ${explanation}\n\nRemember to be careful with suspicious requests!`, resetGame);
             }
@@ -392,8 +396,10 @@ function presentNextQuestion() {
  * Handles actions when the battle is won.
  */
 function battleWon() {
+    console.log("battleWon called.");
     if (currentEnemy) {
         currentEnemy.active = false; // Deactivate the enemy
+        console.log(`Enemy at worldX ${currentEnemy.originalX} deactivated.`);
     }
     battleState = 'idle'; // Reset battle state
     currentEnemy = null; // Clear enemy reference
@@ -406,13 +412,22 @@ function battleWon() {
     keys.down = false;
 
     // Show the success message after the battle state is fully reset
-    showMessageBox("You defeated the enemy!", null); // No specific callback needed for this final message
+    showMessageBox("You defeated the enemy!", () => {
+        console.log("Battle won, gameRunning set to true, battleState is idle.");
+        // Log active states of all enemies after battle won and game resumes
+        backgroundElements.forEach(el => {
+            if (el.type === 'enemy') {
+                console.log(`Enemy at worldX ${el.originalX} active: ${el.active}`);
+            }
+        });
+    });
 }
 
 /**
  * Initializes the current level's background elements.
  */
 function initializeBackground() {
+    console.log("Initializing background for level:", currentLevelIndex + 1);
     backgroundElements = [];
     const levelData = levels[currentLevelIndex];
     const currentLevelLength = levelData.levelLength;
@@ -497,6 +512,7 @@ function initializeBackground() {
  * This function is called repeatedly in the game loop.
  */
 function update() {
+    // console.log(`Update: gameRunning=${gameRunning}, battleState=${battleState}`); // Debug log
     if (!gameRunning || gameOver) return; // Only update if game is running and not over
 
     // Apply gravity (buoyancy)
@@ -612,6 +628,7 @@ function update() {
                 player.worldY + player.height > elementWorldY) {
 
                 // Collision with an enemy, initiate battle
+                console.log("Collision with enemy detected. Initiating battle."); // Debug log
                 showBattleScreen(element);
                 return; // Stop updating while battle screen is active
             }
@@ -727,6 +744,7 @@ function gameLoop() {
  * Resets the game to its initial state (Level 1).
  */
 function resetGame() {
+    console.log("resetGame called. Resetting to Level 1."); // Debug log
     currentLevelIndex = 0; // Reset to the first level
     resetLevel(); // Call resetLevel to initialize the first level
 }
@@ -735,6 +753,7 @@ function resetGame() {
  * Resets the current level's state (player position, world offset, re-initializes background).
  */
 function resetLevel() {
+    console.log("resetLevel called. Initializing level:", currentLevelIndex + 1); // Debug log
     worldXOffset = 0; // Reset horizontal world scroll
     worldYOffset = 0; // Reset vertical world scroll
     
