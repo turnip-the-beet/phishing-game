@@ -448,8 +448,8 @@ function presentNextQuestion() {
 
                 if (correctAnswersInRow === QUESTIONS_PER_BATTLE) {
                     // All questions answered correctly for this battle
-                    // Show success message, then trigger battleWon after message dismissed
-                    showMessageBox("Correct! You've answered all questions. Enemy defeated!", battleWon);
+                    // Directly call battleWon without an intermediate message box
+                    battleWon();
                 } else {
                     // Not yet 3 correct answers, present the next question
                     showMessageBox(`Correct! You have ${correctAnswersInRow}/${QUESTIONS_PER_BATTLE} correct in a row.`, presentNextQuestion);
@@ -480,8 +480,8 @@ function battleWon() {
     keys.up = false;
     keys.down = false;
 
-    // Show the success message after the battle state is fully reset
-    showMessageBox("You defeated the enemy!", null); // No specific callback needed for this final message
+    // Removed the showMessageBox("You defeated the enemy!", null); call
+    // The game should just resume seamlessly here.
 }
 
 /**
@@ -740,7 +740,7 @@ function update() {
                 player.y + player.height > elementWorldY) {
 
                 // Collision with an enemy, initiate battle
-                console.log("Collision with enemy detected. Initiating battle."); // Debug log
+                // console.log("Collision with enemy detected. Initiating battle."); // Removed debug log
                 showBattleScreen(element);
                 return; // Stop updating while battle screen is active
             }
@@ -1012,7 +1012,6 @@ function resizeCanvas() {
 
 // Initial setup on window load
 window.addEventListener('load', () => {
-    // Authenticate with Firebase first
     // Removed Firebase authentication call
     // authenticateAnonymously().then(() => {
         resizeCanvas(); // Set initial canvas size and player Y
