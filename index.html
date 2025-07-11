@@ -36,6 +36,22 @@
         <button id="messageButton">OK</button>
     </div>
 
+    <!-- Username Input Box -->
+    <div id="usernameInputBox" class="input-box">
+        <h2>Game Over!</h2>
+        <p id="finalScoreText">Your Score: 0</p>
+        <p>Enter your name for the leaderboard:</p>
+        <input type="text" id="usernameInput" placeholder="Your Name" maxlength="15">
+        <button id="saveScoreButton">Save Score</button>
+    </div>
+
+    <!-- Leaderboard Box -->
+    <div id="leaderboardBox" class="leaderboard-box">
+        <h2>Top Scores</h2>
+        <ol id="leaderboardList"></ol>
+        <button id="playAgainButton">Play Again</button>
+    </div>
+
     <script type="module" src="script.js"></script>
 </body>
 </html>
