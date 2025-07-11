@@ -785,8 +785,8 @@ function update() {
     const playerWorldX = player.x; // Player's actual world X
     const goalElement = backgroundElements.find(el => el.type === 'goal');
 
-    if (goalElement && playerWorldX > goalElement.originalX + goalElement.width && !goalReached) {
-        console.log(`Goal passed! PlayerWorldX: ${playerWorldX}, GoalX: ${goalElement.originalX + goalElement.width}`);
+    if (goalElement && playerWorldX > goalElement.originalX && !goalReached) { // Changed condition to player.x > goalElement.originalX
+        console.log(`Goal passed! PlayerWorldX: ${playerWorldX}, GoalX: ${goalElement.originalX}`); // Updated log
         goalReached = true; // Mark goal reached for this frame to prevent re-trigger
 
         if (currentLevelIndex < levels.length - 1) {
