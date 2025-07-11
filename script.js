@@ -102,6 +102,7 @@ let currentEnemy = null; // Reference to the enemy currently being battled
 let currentBattleQuestions = []; // Questions for the current battle
 let currentQuestionIndex = 0; // Index of the current question in the battle
 let correctAnswersInRow = 0; // Counter for consecutive correct answers
+let isBattling = false; // NEW: Flag to prevent multiple battle triggers
 
 // --- Removed Firebase Initialization ---
 // const firebaseConfig = ...
@@ -390,16 +391,17 @@ function showQuestionBox(questionData, onAnswerCallback) {
  * @param {object} enemy - The enemy object that triggered the battle.
  */
 function showBattleScreen(enemy) {
-    // console.log("showBattleScreen called. Enemy:", enemy); // Removed debug log
+    console.log("showBattleScreen called. Enemy:", enemy); // Re-added debug log
     gameRunning = false; // Pause game
     battleState = 'active'; // Set battle state to active
+    isBattling = true; // Set battling flag to true
     currentEnemy = enemy; // Store reference to the enemy
     battleScreen.style.display = 'block';
 
     // IMMEDIATELY DEACTIVATE THE ENEMY HERE TO PREVENT RE-TRIGGERING
     if (currentEnemy) {
         currentEnemy.active = false;
-        // console.log(`Enemy at worldX ${currentEnemy.originalX} deactivated upon battle start.`); // Removed debug log
+        console.log(`Enemy at worldX ${currentEnemy.originalX} deactivated upon battle start.`); // Re-added debug log
     }
 
     // Reset keys state when battle screen appears
@@ -435,7 +437,7 @@ function showBattleScreen(enemy) {
  * Presents the next question in the battle sequence.
  */
 function presentNextQuestion() {
-    // console.log("presentNextQuestion called. Current Question Index:", currentQuestionIndex, "Correct in row:", correctAnswersInRow); // Removed debug log
+    console.log("presentNextQuestion called. Current Question Index:", currentQuestionIndex, "Correct in row:", correctAnswersInRow); // Re-added debug log
     // If there are still questions left in the current battle set
     if (currentQuestionIndex < currentBattleQuestions.length) {
         const questionData = currentBattleQuestions[currentQuestionIndex];
@@ -444,7 +446,7 @@ function presentNextQuestion() {
                 score += 100; // Increment score for correct answer
                 correctAnswersInRow++;
                 currentQuestionIndex++; // Move to the next question in the battle sequence
-                // console.log("Answer correct. Correct in row:", correctAnswersInRow); // Removed debug log
+                console.log("Answer correct. Correct in row:", correctAnswersInRow); // Re-added debug log
 
                 if (correctAnswersInRow === QUESTIONS_PER_BATTLE) {
                     // All questions answered correctly for this battle
@@ -456,7 +458,7 @@ function presentNextQuestion() {
                 }
             } else {
                 // Incorrect answer, battle lost
-                // console.log("Answer incorrect. Game Over."); // Removed debug log
+                console.log("Answer incorrect. Game Over."); // Re-added debug log
                 gameOver = true;
                 showMessageBox(`Incorrect! The enemy defeated you. \n\nExplanation: ${explanation}\n\nYour final score: ${score}`, showUsernameInput); // Show username input on game over
             }
@@ -468,9 +470,10 @@ function presentNextQuestion() {
  * Handles actions when the battle is won.
  */
 function battleWon() {
-    // console.log("battleWon called."); // Removed debug log
+    console.log("battleWon called."); // Re-added debug log
     // currentEnemy.active is now set to false in showBattleScreen
     battleState = 'idle'; // Reset battle state
+    isBattling = false; // Reset battling flag
     currentEnemy = null; // Clear enemy reference
     gameRunning = true; // Resume game
 
@@ -733,7 +736,7 @@ function update() {
         const elementWorldY = element.y;
 
         // Player collision with enemy (only if not in battle AND enemy is active)
-        if (element.type === 'enemy' && battleState === 'idle' && element.active) {
+        if (element.type === 'enemy' && battleState === 'idle' && element.active && !isBattling) { // Added !isBattling check
             if (player.x < elementWorldX + element.width &&
                 player.x + player.width > elementWorldX &&
                 player.y < elementWorldY + element.height &&
@@ -885,6 +888,7 @@ function resetLevel() {
     gameOver = false;
     goalReached = false; // Reset goalReached for the new level
     battleState = 'idle'; // Reset battle state
+    isBattling = false; // Reset battling flag on level reset
     currentEnemy = null;
     currentBattleQuestions = [];
     currentQuestionIndex = 0;
@@ -1021,4 +1025,3 @@ window.addEventListener('load', () => {
     // });
 });
 window.addEventListener('resize', resizeCanvas); // Listen for window resize events
-
