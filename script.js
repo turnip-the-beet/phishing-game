@@ -104,11 +104,25 @@ let currentQuestionIndex = 0; // Index of the current question in the battle
 let correctAnswersInRow = 0; // Counter for consecutive correct answers
 
 // --- Firebase Initialization ---
-const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+// IMPORTANT: Replace these placeholder values with your actual Firebase project config!
+// You can find this in your Firebase project console -> Project settings (gear icon) -> "Your apps" -> Web app
+const firebaseConfig = typeof __firebase_config !== 'undefined' && Object.keys(JSON.parse(__firebase_config)).length > 0
+    ? JSON.parse(__firebase_config)
+    : {
+        apiKey: "YOUR_API_KEY", // Replace with your actual API Key
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com", // Replace with your actual Auth Domain
+        projectId: "YOUR_PROJECT_ID", // Replace with your actual Project ID
+        storageBucket: "YOUR_PROJECT_ID.appspot.com", // Replace with your actual Storage Bucket
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID", // Replace with your actual Messaging Sender ID
+        appId: "YOUR_APP_ID" // Replace with your actual App ID
+      };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId || 'default-app-id'; // Use projectId as fallback for appId
+
+
 let userId = null; // Will store the authenticated user ID
 
 // Authenticate anonymously or with custom token
@@ -123,7 +137,7 @@ async function authenticateAnonymously() {
         console.log("Authenticated as:", userId);
     } catch (error) {
         console.error("Firebase authentication error:", error);
-        showMessageBox("Authentication failed. Scores may not be saved.", null);
+        showMessageBox("Authentication failed. Scores may not be saved. Check console for Firebase config.", null);
     }
 }
 
