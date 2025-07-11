@@ -740,7 +740,7 @@ function update() {
                 player.y + player.height > elementWorldY) {
 
                 // Collision with an enemy, initiate battle
-                // console.log("Collision with enemy detected. Initiating battle."); // Removed debug log
+                console.log(`Collision with enemy detected at worldX: ${elementWorldX}. Initiating battle.`); // Debug log
                 showBattleScreen(element);
                 return; // Stop updating while battle screen is active
             }
@@ -1021,3 +1021,4 @@ window.addEventListener('load', () => {
     // });
 });
 window.addEventListener('resize', resizeCanvas); // Listen for window resize events
+
