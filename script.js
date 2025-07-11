@@ -113,7 +113,7 @@ let isBattling = false; // Flag to prevent multiple battle triggers
 //    - Copy the token immediately after creation! AirTable will only show it once.
 // 2. Get your Base ID: Go to airtable.com/api, select your base (e.g., "Scoreboard"), and the ID will be at the top of the page (starts with 'app...').
 // 3. Make sure your AirTable table has columns named "Username", "Score", "Level", "Timestamp".
-const AIRTABLE_PERSONAL_ACCESS_TOKEN = 'patMmXy0npBMQuSvY.8cc2f575a61b440805cdc714ff5bc99d70a080c03f892eed23e8b8bbfbac66e4'; // IMPORTANT: REPLACE THIS WITH YOUR ACTUAL AIRTABLE PERSONAL ACCESS TOKEN
+const AIRTABLE_PERSONAL_ACCESS_TOKEN = 'patMmXy0npBMQuSvY.8cc2f575a61b440805cdc714ff5bc99d70a080c03f892eed23e8b8bbfbac66e4'; // YOUR ACTUAL AIRTABLE PERSONAL ACCESS TOKEN
 const AIRTABLE_BASE_ID = 'tbl65sxtBtO5pFlS0'; // Your actual Base ID
 const AIRTABLE_TABLE_NAME = 'Scoreboard'; // Your actual Table Name
 
@@ -125,9 +125,10 @@ const AIRTABLE_FIELD_TIMESTAMP_ID = 'fld3RsXd2M0uTK7sa';
 
 // --- Score Saving and Loading Functions (AirTable Implementation) ---
 async function saveScore(username, score, level) {
+    // Corrected check: Compare against the placeholder string, not the actual value
     if (AIRTABLE_PERSONAL_ACCESS_TOKEN === 'YOUR_AIRTABLE_PERSONAL_ACCESS_TOKEN' || AIRTABLE_BASE_ID === 'YOUR_AIRTABLE_BASE_ID') {
         console.error("AirTable Personal Access Token or Base ID not configured. Score not saved.");
-        showMessageBox("AirTable not configured. Score not saved. See console.", null);
+        showMessageBox("AirTable not configured. Score not saved. Please replace 'YOUR_AIRTABLE_PERSONAL_ACCESS_TOKEN' and 'YOUR_AIRTABLE_BASE_ID' in script.js.", null);
         return;
     }
     try {
@@ -162,6 +163,7 @@ async function saveScore(username, score, level) {
 }
 
 async function fetchLeaderboard() {
+    // Corrected check: Compare against the placeholder string, not the actual value
     if (AIRTABLE_PERSONAL_ACCESS_TOKEN === 'YOUR_AIRTABLE_PERSONAL_ACCESS_TOKEN' || AIRTABLE_BASE_ID === 'YOUR_AIRTABLE_BASE_ID') {
         console.warn("AirTable Personal Access Token or Base ID not configured. Cannot fetch leaderboard.");
         return [];
@@ -174,9 +176,9 @@ async function fetchLeaderboard() {
         // Request specific fields by ID
         const fieldsParams = `fields%5B%5D=${AIRTABLE_FIELD_USERNAME_ID}&fields%5B%5D=${AIRTABLE_FIELD_SCORE_ID}&fields%5B%5D=${AIRTABLE_FIELD_LEVEL_ID}`;
 
-        const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?${sortParams}&${fieldsParams}&maxRecords=10`, { // Correct interpolation
+        const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?${sortParams}&${fieldsParams}&maxRecords=10`, {
             headers: {
-                'Authorization': `Bearer ${AIRTABLE_PERSONAL_ACCESS_TOKEN}}` // Use PAT here
+                'Authorization': `Bearer ${AIRTABLE_PERSONAL_ACCESS_TOKEN}` // Use PAT here
             }
         });
         const data = await response.json();
@@ -198,6 +200,7 @@ async function fetchLeaderboard() {
         return [];
     }
 }
+
 
 // --- Question Data (Categorized by difficulty) ---
 const phishingQuestions = [
