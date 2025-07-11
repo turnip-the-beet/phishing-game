@@ -113,9 +113,9 @@ let isBattling = false; // Flag to prevent multiple battle triggers
 //    - Copy the token immediately after creation! AirTable will only show it once.
 // 2. Get your Base ID: Go to airtable.com/api, select your base (e.g., "Scoreboard"), and the ID will be at the top of the page (starts with 'app...').
 // 3. Make sure your AirTable table has columns named "Username", "Score", "Level", "Timestamp".
-const AIRTABLE_PERSONAL_ACCESS_TOKEN = 'patMmXy0npBMQuSvY.8cc2f575a61b440805cdc714ff5bc99d70a080c03f892eed23e8b8bbfbac66e4'; // REPLACE THIS WITH YOUR ACTUAL AIRTABLE PERSONAL ACCESS TOKEN
-const AIRTABLE_BASE_ID = 'tbl65sxtBtO5pFlS0'; // REPLACED WITH YOUR ACTUAL BASE ID
-const AIRTABLE_TABLE_NAME = 'Scoreboard'; // REPLACED WITH YOUR ACTUAL TABLE NAME
+const AIRTABLE_PERSONAL_ACCESS_TOKEN = 'patMmXy0npBMQuSvY.8cc2f575a61b440805cdc714ff5bc99d70a080c03f892eed23e8b8bbfbac66e4'; // IMPORTANT: REPLACE THIS WITH YOUR ACTUAL AIRTABLE PERSONAL ACCESS TOKEN
+const AIRTABLE_BASE_ID = 'tbl65sxtBtO5pFlS0'; // Your actual Base ID
+const AIRTABLE_TABLE_NAME = 'Scoreboard'; // Your actual Table Name
 
 // --- AirTable Field IDs (from your documentation) ---
 const AIRTABLE_FIELD_USERNAME_ID = 'fldtgOwdNqcBVdK5A';
@@ -131,10 +131,10 @@ async function saveScore(username, score, level) {
         return;
     }
     try {
-        const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`, { // Corrected URL interpolation
+        const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`, {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer ${"patMmXy0npBMQuSvY.8cc2f575a61b440805cdc714ff5bc99d70a080c03f892eed23e8b8bbfbac66e4"}', // Use PAT here
+                'Authorization': `Bearer ${AIRTABLE_PERSONAL_ACCESS_TOKEN}`, // Correct interpolation
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -174,9 +174,9 @@ async function fetchLeaderboard() {
         // Request specific fields by ID
         const fieldsParams = `fields%5B%5D=${AIRTABLE_FIELD_USERNAME_ID}&fields%5B%5D=${AIRTABLE_FIELD_SCORE_ID}&fields%5B%5D=${AIRTABLE_FIELD_LEVEL_ID}`;
 
-        const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?${sortParams}&${fieldsParams}&maxRecords=10`, { // Corrected URL interpolation
+        const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?${sortParams}&${fieldsParams}&maxRecords=10`, { // Correct interpolation
             headers: {
-                'Authorization': `Bearer ${patMmXy0npBMQuSvY.8cc2f575a61b440805cdc714ff5bc99d70a080c03f892eed23e8b8bbfbac66e4}` // Use PAT here
+                'Authorization': `Bearer ${AIRTABLE_PERSONAL_ACCESS_TOKEN}` // Use PAT here
             }
         });
         const data = await response.json();
@@ -198,7 +198,6 @@ async function fetchLeaderboard() {
         return [];
     }
 }
-
 
 // --- Question Data (Categorized by difficulty) ---
 const phishingQuestions = [
