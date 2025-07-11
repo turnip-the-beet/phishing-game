@@ -542,7 +542,7 @@ async function showLeaderboard() {
     } else {
         topScores.forEach((s, index) => {
             const listItem = document.createElement('li');
-            listItem.innerHTML = `<span>${index + 1}. ${s.username}</span> <span>Score: ${s.score} (Level ${s.level})</span>`;
+            listItem.innerHTML = `<span>${s.username}</span> <span>Score: ${s.score} (Level ${s.level})</span>`; // Removed index + 1
             leaderboardList.appendChild(listItem);
         });
     }
