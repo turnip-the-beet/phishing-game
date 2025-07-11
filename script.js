@@ -1,3 +1,8 @@
+// Import Firebase modules
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+import { getAuth, signInAnonymously, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
 // Get the canvas element and its 2D rendering context
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -22,6 +27,18 @@ const optionsContainer = document.getElementById('optionsContainer');
 // Get battle screen elements
 const battleScreen = document.getElementById('battleScreen');
 const startBattleButton = document.getElementById('startBattleButton');
+
+// Get Username Input Box elements
+const usernameInputBox = document.getElementById('usernameInputBox');
+const usernameInput = document.getElementById('usernameInput');
+const saveScoreButton = document.getElementById('saveScoreButton');
+const finalScoreText = document.getElementById('finalScoreText');
+
+// Get Leaderboard Box elements
+const leaderboardBox = document.getElementById('leaderboardBox');
+const leaderboardList = document.getElementById('leaderboardList');
+const playAgainButton = document.getElementById('playAgainButton');
+
 
 // Game constants and variables
 const GRAVITY = 0.05; // Reduced gravity for underwater feel
@@ -77,6 +94,7 @@ let gameRunning = false; // New state to control game loop
 let gameOver = false;
 let goalReached = false;
 let currentLevelIndex = 0; // Tracks the current level
+let score = 0; // Player's current score
 
 // Battle state variables
 let battleState = 'idle'; // 'idle', 'active', 'questioning'
@@ -85,9 +103,87 @@ let currentBattleQuestions = []; // Questions for the current battle
 let currentQuestionIndex = 0; // Index of the current question in the battle
 let correctAnswersInRow = 0; // Counter for consecutive correct answers
 
+// --- Firebase Initialization ---
+const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+let userId = null; // Will store the authenticated user ID
+
+// Authenticate anonymously or with custom token
+async function authenticateAnonymously() {
+    try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+            await signInAnonymously(auth);
+        }
+        userId = auth.currentUser.uid;
+        console.log("Authenticated as:", userId);
+    } catch (error) {
+        console.error("Firebase authentication error:", error);
+        showMessageBox("Authentication failed. Scores may not be saved.", null);
+    }
+}
+
+// --- Score Saving and Loading Functions ---
+async function saveScore(username, score, level) {
+    if (!userId) {
+        console.error("User not authenticated. Cannot save score.");
+        return;
+    }
+    try {
+        const scoresCollectionRef = collection(db, `artifacts/${appId}/public/data/leaderboard`);
+        await addDoc(scoresCollectionRef, {
+            userId: userId,
+            username: username,
+            score: score,
+            level: level,
+            timestamp: Date.now()
+        });
+        console.log("Score saved successfully!");
+    } catch (e) {
+        console.error("Error adding document: ", e);
+        showMessageBox("Failed to save score. Please check console for details.", null);
+    }
+}
+
+async function fetchLeaderboard() {
+    try {
+        const scoresCollectionRef = collection(db, `artifacts/${appId}/public/data/leaderboard`);
+        // As per instructions, avoid orderBy() in Firestore queries to prevent index issues.
+        // Fetch a reasonable number and sort in JavaScript.
+        const q = query(scoresCollectionRef, limit(20)); // Fetch up to 20 to ensure we get top 10 after sorting
+        const querySnapshot = await getDocs(q);
+        let scores = [];
+        querySnapshot.forEach((doc) => {
+            scores.push(doc.data());
+        });
+
+        // Sort scores by score (descending), then by level (descending), then by timestamp (ascending for ties)
+        scores.sort((a, b) => {
+            if (b.score !== a.score) {
+                return b.score - a.score;
+            }
+            if (b.level !== a.level) {
+                return b.level - a.level;
+            }
+            return a.timestamp - b.timestamp; // Earlier timestamp wins ties
+        });
+
+        return scores.slice(0, 10); // Return top 10
+    } catch (e) {
+        console.error("Error fetching leaderboard: ", e);
+        showMessageBox("Failed to load leaderboard. Please check console for details.", null);
+        return [];
+    }
+}
+
+
 // --- Question Data (Categorized by difficulty) ---
 const phishingQuestions = [
-    // Level 1: Easier questions
+    // Level 1: Easier questions (difficulty: 1)
     {
         question: "Which of these is a common sign of a phishing email?",
         options: ["Grammatical errors and typos", "A personalized greeting with your name", "It comes from a well-known company", "It has a legitimate-looking sender address"],
@@ -109,7 +205,7 @@ const phishingQuestions = [
         explanation: "Phishing is a social engineering attack designed to trick individuals into divulging sensitive data.",
         difficulty: 1
     },
-    // Level 2: Medium difficulty questions
+    // Level 2: Medium difficulty questions (difficulty: 2)
     {
         question: "Which of these links is most likely to be malicious?",
         options: ["https://www.example.com/login", "https://secure.bank.com/account", "https://login.examp1e.co/verify", "https://support.company.org/help"],
@@ -131,7 +227,7 @@ const phishingQuestions = [
         explanation: "Smishing is phishing conducted over text messages, often containing malicious links or requests for information.",
         difficulty: 2
     },
-    // Level 3: Harder questions
+    // Level 3: Harder questions (difficulty: 3)
     {
         question: "What is 'Vishing'?",
         options: ["Phishing via email", "Phishing via text message", "Phishing via phone call (voice)", "Phishing via video conference"],
@@ -144,6 +240,18 @@ const phishingQuestions = [
         options: ["Provide your banking details to claim the prize", "Click a link to learn more about the prize", "Delete the email and report it as spam/phishing", "Share it with friends so they can also claim a prize"],
         correctAnswer: "Delete the email and report it as spam/phishing",
         explanation: "Legitimate lotteries or prize offers do not ask for banking details upfront. This is a common scam.",
+        difficulty: 3
+    },
+    { // NEW QUESTION FOR DIFFICULTY 3
+        question: "What is the primary goal of a 'spear phishing' attack?",
+        options: [
+            "To send a generic phishing email to millions of users",
+            "To target a specific individual or organization with a personalized attack",
+            "To flood an email server with malicious attachments",
+            "To trick users into downloading a game"
+        ],
+        correctAnswer: "To target a specific individual or organization with a personalized attack",
+        explanation: "Spear phishing is highly targeted, using personal information to make the attack more convincing.",
         difficulty: 3
     }
 ];
@@ -327,7 +435,7 @@ function showQuestionBox(questionData, onAnswerCallback) {
  * @param {object} enemy - The enemy object that triggered the battle.
  */
 function showBattleScreen(enemy) {
-    console.log("showBattleScreen called. Enemy:", enemy);
+    // console.log("showBattleScreen called. Enemy:", enemy); // Removed debug log
     gameRunning = false; // Pause game
     battleState = 'active'; // Set battle state to active
     currentEnemy = enemy; // Store reference to the enemy
@@ -336,7 +444,7 @@ function showBattleScreen(enemy) {
     // IMMEDIATELY DEACTIVATE THE ENEMY HERE TO PREVENT RE-TRIGGERING
     if (currentEnemy) {
         currentEnemy.active = false;
-        console.log(`Enemy at worldX ${currentEnemy.originalX} deactivated upon battle start.`);
+        // console.log(`Enemy at worldX ${currentEnemy.originalX} deactivated upon battle start.`); // Removed debug log
     }
 
     // Reset keys state when battle screen appears
@@ -348,7 +456,8 @@ function showBattleScreen(enemy) {
     // Select 3 random questions for this battle based on current level's difficulty
     currentBattleQuestions = [];
     const currentLevel = levels[currentLevelIndex];
-    const availableQuestions = phishingQuestions.filter(q => q.difficulty >= currentLevel.minQuestionDifficulty);
+    // Filter to get ONLY questions of the current level's minQuestionDifficulty
+    const availableQuestions = phishingQuestions.filter(q => q.difficulty === currentLevel.minQuestionDifficulty);
     
     // Shuffle available questions and pick 3
     const shuffledQuestions = [...availableQuestions].sort(() => 0.5 - Math.random());
@@ -357,7 +466,8 @@ function showBattleScreen(enemy) {
         if (i < shuffledQuestions.length) {
             currentBattleQuestions.push(shuffledQuestions[i]);
         } else {
-            // Fallback if not enough questions (shouldn't happen with current data)
+            // Fallback if not enough questions (shouldn't happen with current data with new question)
+            // This fallback will pick a random question from the entire pool if specific difficulty pool is exhausted
             currentBattleQuestions.push(phishingQuestions[Math.floor(Math.random() * phishingQuestions.length)]);
         }
     }
@@ -370,15 +480,16 @@ function showBattleScreen(enemy) {
  * Presents the next question in the battle sequence.
  */
 function presentNextQuestion() {
-    console.log("presentNextQuestion called. Current Question Index:", currentQuestionIndex, "Correct in row:", correctAnswersInRow);
+    // console.log("presentNextQuestion called. Current Question Index:", currentQuestionIndex, "Correct in row:", correctAnswersInRow); // Removed debug log
     // If there are still questions left in the current battle set
     if (currentQuestionIndex < currentBattleQuestions.length) {
         const questionData = currentBattleQuestions[currentQuestionIndex];
         showQuestionBox(questionData, (isCorrect, explanation) => {
             if (isCorrect) {
+                score += 100; // Increment score for correct answer
                 correctAnswersInRow++;
                 currentQuestionIndex++; // Move to the next question in the battle sequence
-                console.log("Answer correct. Correct in row:", correctAnswersInRow);
+                // console.log("Answer correct. Correct in row:", correctAnswersInRow); // Removed debug log
 
                 if (correctAnswersInRow === QUESTIONS_PER_BATTLE) {
                     // All questions answered correctly for this battle
@@ -390,9 +501,9 @@ function presentNextQuestion() {
                 }
             } else {
                 // Incorrect answer, battle lost
-                console.log("Answer incorrect. Game Over.");
+                // console.log("Answer incorrect. Game Over."); // Removed debug log
                 gameOver = true;
-                showMessageBox(`Incorrect! The enemy defeated you. \n\nExplanation: ${explanation}\n\nRemember to be careful with suspicious requests!`, resetGame);
+                showMessageBox(`Incorrect! The enemy defeated you. \n\nExplanation: ${explanation}\n\nYour final score: ${score}`, showUsernameInput); // Show username input on game over
             }
         });
     }
@@ -402,7 +513,7 @@ function presentNextQuestion() {
  * Handles actions when the battle is won.
  */
 function battleWon() {
-    console.log("battleWon called.");
+    // console.log("battleWon called."); // Removed debug log
     // currentEnemy.active is now set to false in showBattleScreen
     battleState = 'idle'; // Reset battle state
     currentEnemy = null; // Clear enemy reference
@@ -419,10 +530,59 @@ function battleWon() {
 }
 
 /**
+ * Displays the username input box and prepares to save the score.
+ */
+function showUsernameInput() {
+    gameRunning = false; // Ensure game is paused
+    usernameInputBox.style.display = 'block';
+    finalScoreText.textContent = `Your Score: ${score}`;
+    usernameInput.value = ''; // Clear previous input
+    usernameInput.focus(); // Focus on the input field
+    saveScoreButton.onclick = async () => {
+        const username = usernameInput.value.trim();
+        if (username.length > 0) {
+            await saveScore(username, score, currentLevelIndex + 1); // Save score with username and current level
+            usernameInputBox.style.display = 'none';
+            showLeaderboard(); // Show leaderboard after saving
+        } else {
+            showMessageBox("Please enter a username to save your score.", null);
+        }
+    };
+}
+
+/**
+ * Fetches and displays the leaderboard.
+ */
+async function showLeaderboard() {
+    gameRunning = false; // Ensure game is paused
+    leaderboardBox.style.display = 'block';
+    leaderboardList.innerHTML = '<li>Loading scores...</li>'; // Loading message
+
+    const topScores = await fetchLeaderboard();
+    leaderboardList.innerHTML = ''; // Clear loading message
+
+    if (topScores.length === 0) {
+        leaderboardList.innerHTML = '<li>No scores yet! Be the first!</li>';
+    } else {
+        topScores.forEach((s, index) => {
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `<span>${index + 1}. ${s.username}</span> <span>Score: ${s.score} (Level ${s.level})</span>`;
+            leaderboardList.appendChild(listItem);
+        });
+    }
+
+    playAgainButton.onclick = () => {
+        leaderboardBox.style.display = 'none';
+        resetGame(); // Start a new game
+    };
+}
+
+
+/**
  * Initializes the current level's background elements.
  */
 function initializeBackground() {
-    console.log("Initializing background for level:", currentLevelIndex + 1);
+    // console.log("Initializing background for level:", currentLevelIndex + 1); // Removed debug log
     backgroundElements = [];
     const levelData = levels[currentLevelIndex];
     const currentLevelLength = levelData.levelLength;
@@ -585,7 +745,7 @@ function update() {
                 const enemyWorldX = element.originalX;
                 const enemyWorldY = element.y;
 
-                // Calculate distance to player in world coordinates
+                // Calculate distance to player
                 const dx = (player.x + player.width / 2) - (enemyWorldX + element.width / 2);
                 const dy = (player.y + player.height / 2) - (enemyWorldY + element.height / 2);
                 const distance = Math.sqrt(dx * dx + dy * dy);
@@ -625,7 +785,7 @@ function update() {
                 player.y + player.height > elementWorldY) {
 
                 // Collision with an enemy, initiate battle
-                console.log("Collision with enemy detected. Initiating battle."); // Debug log
+                // console.log("Collision with enemy detected. Initiating battle."); // Removed debug log
                 showBattleScreen(element);
                 return; // Stop updating while battle screen is active
             }
@@ -653,7 +813,7 @@ function update() {
                         player.y = elementWorldY - player.height;
                         player.velocityY = 0;
                         player.isGrounded = true; // Player is resting on platform
-                    } else { // Player hit from bottom (bumping head on platform)
+                    } else { // Player.y > elementWorldY (player hit from bottom)
                         player.y = elementWorldY + element.height;
                         player.velocityY = 0; // Stop upward movement
                     }
@@ -679,7 +839,7 @@ function update() {
         } else {
             // All levels complete!
             gameOver = true;
-            showMessageBox("Congratulations! You completed all levels and mastered cybersecurity!", resetGame);
+            showMessageBox("Congratulations! You completed all levels and mastered cybersecurity!", showUsernameInput); // Show username input on game completion
         }
         return; // Stop updating if goal reached
     }
@@ -721,6 +881,13 @@ function draw() {
     player.screenY = player.y - worldYOffset;
     ctx.fillStyle = 'red'; // Color for the swimming guy
     ctx.fillRect(player.screenX, player.screenY, player.width, player.height);
+
+    // Draw current score
+    ctx.fillStyle = 'white';
+    ctx.font = "16px 'Press Start 2P'";
+    ctx.textAlign = 'left';
+    ctx.fillText(`Score: ${score}`, 10, 20);
+    ctx.fillText(`Level: ${currentLevelIndex + 1}`, 10, 40);
 }
 
 /**
@@ -737,8 +904,9 @@ function gameLoop() {
  * Resets the game to its initial state (Level 1).
  */
 function resetGame() {
-    console.log("resetGame called. Resetting to Level 1."); // Debug log
+    // console.log("resetGame called. Resetting to Level 1."); // Removed debug log
     currentLevelIndex = 0; // Reset to the first level
+    score = 0; // Reset score on full game reset
     resetLevel(); // Call resetLevel to initialize the first level
 }
 
@@ -746,7 +914,7 @@ function resetGame() {
  * Resets the current level's state (player position, world offset, re-initializes background).
  */
 function resetLevel() {
-    console.log("resetLevel called. Initializing level:", currentLevelIndex + 1); // Debug log
+    // console.log("resetLevel called. Initializing level:", currentLevelIndex + 1); // Removed debug log
     worldXOffset = 0; // Reset horizontal world scroll
     worldYOffset = 0; // Reset vertical world scroll
     
@@ -885,9 +1053,12 @@ function resizeCanvas() {
 
 // Initial setup on window load
 window.addEventListener('load', () => {
-    resizeCanvas(); // Set initial canvas size and player Y
-    gameRunning = true; // Game starts immediately
-    resetGame(); // Ensure game state is reset and ready (starts Level 1)
-    gameLoop(); // Start the main game loop
+    // Authenticate with Firebase first
+    authenticateAnonymously().then(() => {
+        resizeCanvas(); // Set initial canvas size and player Y
+        gameRunning = true; // Game starts immediately
+        resetGame(); // Ensure game state is reset and ready (starts Level 1)
+        gameLoop(); // Start the main game loop
+    });
 });
 window.addEventListener('resize', resizeCanvas); // Listen for window resize events
