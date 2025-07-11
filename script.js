@@ -176,7 +176,7 @@ async function fetchLeaderboard() {
 
         const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?${sortParams}&${fieldsParams}&maxRecords=10`, { // Correct interpolation
             headers: {
-                'Authorization': `Bearer ${AIRTABLE_PERSONAL_ACCESS_TOKEN}` // Use PAT here
+                'Authorization': `Bearer ${AIRTABLE_PERSONAL_ACCESS_TOKEN}}` // Use PAT here
             }
         });
         const data = await response.json();
