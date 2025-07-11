@@ -104,36 +104,84 @@ let currentQuestionIndex = 0; // Index of the current question in the battle
 let correctAnswersInRow = 0; // Counter for consecutive correct answers
 let isBattling = false; // Flag to prevent multiple battle triggers
 
-// --- Removed Firebase Initialization ---
-// const firebaseConfig = ...
-// const app = initializeApp(firebaseConfig);
-// const db = getFirestore(app);
-// const auth = getAuth(app);
-// const appId = ...
-// let userId = null;
+// --- AirTable Configuration ---
+// IMPORTANT: Replace these placeholder values with your actual AirTable API Key and Base ID!
+// 1. Get your API Key: Go to airtable.com/account (generate a new one if needed)
+// 2. Get your Base ID: Go to airtable.com/api, select your base (e.g., "Leaderboard"), and the ID will be at the top of the page (starts with 'app').
+// 3. Make sure your AirTable table has columns named "Username", "Score", "Level", "Timestamp".
+const AIRTABLE_API_KEY = 'YOUR_AIRTABLE_API_KEY'; // REPLACE THIS WITH YOUR ACTUAL AIRTABLE API KEY
+const AIRTABLE_BASE_ID = 'YOUR_AIRTABLE_BASE_ID'; // REPLACE THIS WITH YOUR ACTUAL AIRTABLE BASE ID (e.g., 'appXXXXXXXXXXXXXX')
+const AIRTABLE_TABLE_NAME = 'Leaderboard'; // Make sure this matches your table name in AirTable
 
-// Removed authenticateAnonymously function
-// async function authenticateAnonymously() { ... }
-
-// --- Score Saving and Loading Functions (Dummy implementations without Firebase) ---
+// --- Score Saving and Loading Functions (AirTable Implementation) ---
 async function saveScore(username, score, level) {
-    console.log(`Score would be saved for: ${username}, Score: ${score}, Level: ${level}`);
-    // In a real scenario, this would send data to your backend (Firestore, AirTable, Google Sheets, etc.)
-    // For now, it just logs to the console.
-    return new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    if (AIRTABLE_API_KEY === 'YOUR_AIRTABLE_API_KEY' || AIRTABLE_BASE_ID === 'YOUR_AIRTABLE_BASE_ID') {
+        console.error("AirTable API Key or Base ID not configured. Score not saved.");
+        showMessageBox("AirTable not configured. Score not saved. See console.", null);
+        return;
+    }
+    try {
+        const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                records: [{
+                    fields: {
+                        "Username": username,
+                        "Score": score,
+                        "Level": level,
+                        "Timestamp": new Date().toISOString() // ISO string for date/time field
+                    }
+                }]
+            })
+        });
+        const data = await response.json();
+        if (response.ok) {
+            console.log("Score saved to AirTable successfully!", data);
+        } else {
+            console.error("Error saving score to AirTable:", data);
+            showMessageBox("Failed to save score to leaderboard. Check console.", null);
+        }
+    } catch (e) {
+        console.error("Network error saving score to AirTable:", e);
+        showMessageBox("Network error saving score. Check console.", null);
+    }
 }
 
 async function fetchLeaderboard() {
-    console.log("Leaderboard would be fetched here.");
-    // In a real scenario, this would fetch data from your backend
-    // For now, it returns dummy data or an empty array.
-    return new Promise(resolve => setTimeout(() => {
-        resolve([
-            { username: 'DummyPlayer1', score: 1000, level: 3 },
-            { username: 'DummyPlayer2', score: 800, level: 2 },
-            { username: 'DummyPlayer3', score: 500, level: 1 }
-        ]);
-    }, 1000)); // Simulate network delay
+    if (AIRTABLE_API_KEY === 'YOUR_AIRTABLE_API_KEY' || AIRTABLE_BASE_ID === 'YOUR_AIRTABLE_BASE_ID') {
+        console.warn("AirTable API Key or Base ID not configured. Cannot fetch leaderboard.");
+        return [];
+    }
+    try {
+        // Sort by Score (desc), then Level (desc), then Timestamp (asc for ties)
+        const sortParams = `sort%5B0%5D%5Bfield%5D=Score&sort%5B0%5D%5Bdirection%5D=desc&sort%5B1%5D%5Bfield%5D=Level&sort%5B1%5D%5Bdirection%5D=desc&sort%5B2%5D%5Bfield%5D=Timestamp&sort%5B2%5D%5Bdirection%5D=asc`;
+        const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?${sortParams}&maxRecords=10`, {
+            headers: {
+                'Authorization': `Bearer ${AIRTABLE_API_KEY}`
+            }
+        });
+        const data = await response.json();
+        if (response.ok) {
+            let scores = data.records.map(record => ({
+                username: record.fields.Username,
+                score: record.fields.Score,
+                level: record.fields.Level
+            }));
+            return scores;
+        } else {
+            console.error("Error fetching leaderboard from AirTable:", data);
+            showMessageBox("Failed to load leaderboard from AirTable. Check console.", null);
+            return [];
+        }
+    } catch (e) {
+        console.error("Network error fetching leaderboard from AirTable:", e);
+        showMessageBox("Network error loading leaderboard. Check console.", null);
+        return [];
+    }
 }
 
 
