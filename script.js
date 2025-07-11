@@ -102,7 +102,7 @@ let currentEnemy = null; // Reference to the enemy currently being battled
 let currentBattleQuestions = []; // Questions for the current battle
 let currentQuestionIndex = 0; // Index of the current question in the battle
 let correctAnswersInRow = 0; // Counter for consecutive correct answers
-let isBattling = false; // NEW: Flag to prevent multiple battle triggers
+let isBattling = false; // Flag to prevent multiple battle triggers
 
 // --- Removed Firebase Initialization ---
 // const firebaseConfig = ...
@@ -216,10 +216,11 @@ const phishingQuestions = [
 const levels = [
     {
         levelNumber: 1,
-        levelLength: 4000, // Increased length
+        levelLength: 6000, // Increased length
         enemySpawnPoints: [ // Array of objects for more control over enemy placement
             { x: 600, y: 150 }, { x: 900, y: 280 }, { x: 1300, y: 100 }, { x: 1700, y: 220 },
-            { x: 2200, y: 180 }, { x: 2700, y: 80 }, { x: 3200, y: 200 }, { x: 3700, y: 140 }
+            { x: 2200, y: 180 }, { x: 2700, y: 80 }, { x: 3200, y: 200 }, { x: 3700, y: 140 },
+            { x: 4200, y: 250 }, { x: 4700, y: 120 }, { x: 5200, y: 290 }, { x: 5700, y: 170 }
         ],
         platformPositions: [
             // Start area
@@ -239,27 +240,30 @@ const levels = [
             { x: 2700, yOffset: 100, width: PLATFORM_WIDTH_BASE + 100 }, // Ceiling
             { x: 2700, yOffset: -10, width: PLATFORM_WIDTH_BASE + 100 }, // Floor
             { x: 3150, yOffset: 50, width: 30, height: 180 }, // Vertical wall
-            // End area
-            { x: 3500, yOffset: 70, width: PLATFORM_WIDTH_BASE }
+            // More floating platforms
+            { x: 3500, yOffset: 70, width: PLATFORM_WIDTH_BASE },
+            { x: 3900, yOffset: 110, width: PLATFORM_WIDTH_BASE + 30 },
+            // Fourth chamber/hall
+            { x: 4300, yOffset: 140, width: PLATFORM_WIDTH_BASE + 80 }, // Ceiling
+            { x: 4300, yOffset: -60, width: PLATFORM_WIDTH_BASE + 80 }, // Floor
+            { x: 4700, yOffset: 90, width: 30, height: 170 }, // Vertical wall
+            // Fifth chamber/hall
+            { x: 5000, yOffset: 120, width: PLATFORM_WIDTH_BASE + 50 }, // Ceiling
+            { x: 5000, yOffset: -20, width: PLATFORM_WIDTH_BASE + 50 }, // Floor
+            { x: 5400, yOffset: 60, width: 30, height: 190 }, // Vertical wall
+            // Final approach platforms
+            { x: 5700, yOffset: 90, width: PLATFORM_WIDTH_BASE }
         ],
         minQuestionDifficulty: 1
     },
     {
         levelNumber: 2,
-        levelLength: 6000, // Increased length
+        levelLength: 8000, // Increased length
         enemySpawnPoints: [
-            { x: 400, y: 100 },
-            { x: 750, y: 250 },
-            { x: 1200, y: 180 },
-            { x: 1600, y: 300 },
-            { x: 2100, y: 120 },
-            { x: 2600, y: 270 },
-            { x: 3100, y: 150 },
-            { x: 3600, y: 320 },
-            { x: 4100, y: 100 },
-            { x: 4600, y: 280 },
-            { x: 5100, y: 190 },
-            { x: 5600, y: 310 }
+            { x: 400, y: 100 }, { x: 750, y: 250 }, { x: 1200, y: 180 }, { x: 1600, y: 300 },
+            { x: 2100, y: 120 }, { x: 2600, y: 270 }, { x: 3100, y: 150 }, { x: 3600, y: 320 },
+            { x: 4100, y: 100 }, { x: 4600, y: 280 }, { x: 5100, y: 190 }, { x: 5600, y: 310 },
+            { x: 6100, y: 140 }, { x: 6600, y: 260 }, { x: 7100, y: 110 }, { x: 7600, y: 230 }
         ],
         platformPositions: [
             // Start area
@@ -281,25 +285,33 @@ const levels = [
             // More open area
             { x: 3200, yOffset: 110, width: PLATFORM_WIDTH_BASE + 40 },
             { x: 3700, yOffset: 60, width: PLATFORM_WIDTH_BASE - 10 },
-            // Final long hall
-            { x: 4200, yOffset: 140, width: PLATFORM_WIDTH_BASE + 200 }, // Ceiling
-            { x: 4200, yOffset: -20, width: PLATFORM_WIDTH_BASE + 200 }, // Floor
-            { x: 4800, yOffset: 70, width: 30, height: 190 }, // Wall
-            { x: 5200, yOffset: 110, width: 30, height: 160 }, // Wall
-            // End area
-            { x: 5500, yOffset: 90, width: PLATFORM_WIDTH_BASE + 50 }
+            // Complex Chamber 3
+            { x: 4200, yOffset: 190, width: PLATFORM_WIDTH_BASE + 150 }, // Ceiling
+            { x: 4200, yOffset: -70, width: PLATFORM_WIDTH_BASE + 150 }, // Floor
+            { x: 4700, yOffset: 90, width: 30, height: 210 }, // Wall
+            { x: 4900, yOffset: 130, width: 30, height: 170 }, // Wall
+            // Long narrow passage
+            { x: 5200, yOffset: 100, width: PLATFORM_WIDTH_BASE + 200 }, // Ceiling
+            { x: 5200, yOffset: -10, width: PLATFORM_WIDTH_BASE + 200 }, // Floor
+            { x: 5700, yOffset: 50, width: 30, height: 180 }, // Vertical wall
+            { x: 6000, yOffset: 120, width: 30, height: 160 }, // Vertical wall
+            // Final approach platforms
+            { x: 6300, yOffset: 90, width: PLATFORM_WIDTH_BASE + 50 },
+            { x: 6800, yOffset: 140, width: PLATFORM_WIDTH_BASE - 10 },
+            { x: 7300, yOffset: 80, width: PLATFORM_WIDTH_BASE + 20 }
         ],
         minQuestionDifficulty: 2
     },
     {
         levelNumber: 3,
-        levelLength: 8000, // Even longer and more complex
+        levelLength: 10000, // Even longer and more complex
         enemySpawnPoints: [
             { x: 500, y: 100 }, { x: 800, y: 280 }, { x: 1200, y: 150 }, { x: 1600, y: 300 },
             { x: 2000, y: 120 }, { x: 2400, y: 270 }, { x: 2800, y: 180 }, { x: 3200, y: 320 },
             { x: 3600, y: 100 }, { x: 4000, y: 250 }, { x: 4400, y: 150 }, { x: 4800, y: 300 },
             { x: 5200, y: 120 }, { x: 5600, y: 270 }, { x: 6000, y: 180 }, { x: 6400, y: 320 },
-            { x: 6800, y: 100 }, { x: 7200, y: 250 }, { x: 7600, y: 150 }
+            { x: 6800, y: 100 }, { x: 7200, y: 250 }, { x: 7600, y: 150 }, { x: 8000, y: 300 },
+            { x: 8400, y: 120 }, { x: 8800, y: 270 }, { x: 9200, y: 180 }, { x: 9600, y: 320 }
         ],
         platformPositions: [
             // Start area
@@ -331,8 +343,14 @@ const levels = [
             { x: 6500, yOffset: 60, width: 30, height: 250 }, // Wall
             { x: 6800, yOffset: 100, width: 30, height: 200 }, // Wall
             { x: 7100, yOffset: 70, width: 30, height: 230 }, // Wall
-            // Final approach
-            { x: 7500, yOffset: 90, width: PLATFORM_WIDTH_BASE + 50 }
+            // Even more complex path
+            { x: 7500, yOffset: 120, width: PLATFORM_WIDTH_BASE + 100 },
+            { x: 7800, yOffset: 60, width: PLATFORM_WIDTH_BASE - 10 },
+            { x: 8200, yOffset: 150, width: PLATFORM_WIDTH_BASE + 50 },
+            { x: 8500, yOffset: 90, width: PLATFORM_WIDTH_BASE + 20 },
+            { x: 8900, yOffset: 180, width: PLATFORM_WIDTH_BASE + 80 },
+            { x: 9200, yOffset: 70, width: PLATFORM_WIDTH_BASE - 30 },
+            { x: 9500, yOffset: 130, width: PLATFORM_WIDTH_BASE + 40 }
         ],
         minQuestionDifficulty: 3
     }
