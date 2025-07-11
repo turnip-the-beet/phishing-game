@@ -1046,7 +1046,7 @@ rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameR
 rightButton.addEventListener('touchend', (e) => { e.preventDefault(); if(gameRunning) keys.right = false; }, { passive: false });
 rightButton.addEventListener('mousedown', () => { if(gameRunning) keys.right = true; });
 rightButton.addEventListener('mouseup', () => { keys.right = false; });
-rightButton.addEventListener('mouseleave', () => { keys.right = false; });
+rightButton.addEventListener('mouseleave', () => { keys.left = false; }); // For mouse leaving button area
 
 jumpButton.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameRunning) keys.up = true; }, { passive: false });
 jumpButton.addEventListener('touchend', (e) => { e.preventDefault(); if(gameRunning) keys.up = false; }, { passive: false });
