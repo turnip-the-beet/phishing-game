@@ -114,7 +114,7 @@ let isBattling = false; // Flag to prevent multiple battle triggers
 // 2. Get your Base ID: Go to airtable.com/api, select your base (e.g., "Scoreboard"), and the ID will be at the top of the page (starts with 'app...').
 // 3. Make sure your AirTable table has columns named "Username", "Score", "Level", "Timestamp".
 const AIRTABLE_PERSONAL_ACCESS_TOKEN = 'patMmXy0npBMQuSvY.8cc2f575a61b440805cdc714ff5bc99d70a080c03f892eed23e8b8bbfbac66e4'; // YOUR ACTUAL AIRTABLE PERSONAL ACCESS TOKEN
-const AIRTABLE_BASE_ID = 'tbl65sxtBtO5pFlS0'; // Your actual Base ID
+const AIRTABLE_BASE_ID = 'appJo4NxAqgGRQXUF'; // Your actual Base ID
 const AIRTABLE_TABLE_NAME = 'Scoreboard'; // Your actual Table Name
 
 // --- AirTable Field IDs (from your documentation) ---
