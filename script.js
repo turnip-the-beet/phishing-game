@@ -134,7 +134,7 @@ async function saveScore(username, score, level) {
         const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`, { // Corrected URL interpolation
             method: 'POST',
             headers: {
-                'Authorization': Bearer ${'patMmXy0npBMQuSvY.8cc2f575a61b440805cdc714ff5bc99d70a080c03f892eed23e8b8bbfbac66e4'}, // Use PAT here
+                'Authorization': Bearer ${{'patMmXy0npBMQuSvY.8cc2f575a61b440805cdc714ff5bc99d70a080c03f892eed23e8b8bbfbac66e4'}, // Use PAT here
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
