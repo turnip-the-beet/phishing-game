@@ -1,7 +1,7 @@
-// Import Firebase modules
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-import { getAuth, signInAnonymously, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+// Removed Firebase modules import
+// import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+// import { getAuth, signInAnonymously, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+// import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
 // Get the canvas element and its 2D rendering context
 const canvas = document.getElementById('gameCanvas');
@@ -103,95 +103,36 @@ let currentBattleQuestions = []; // Questions for the current battle
 let currentQuestionIndex = 0; // Index of the current question in the battle
 let correctAnswersInRow = 0; // Counter for consecutive correct answers
 
-// --- Firebase Initialization ---
-// IMPORTANT: Replace these placeholder values with your actual Firebase project config!
-// You can find this in your Firebase project console -> Project settings (gear icon) -> "Your apps" -> Web app
-const firebaseConfig = typeof __firebase_config !== 'undefined' && Object.keys(JSON.parse(__firebase_config)).length > 0
-    ? JSON.parse(__firebase_config)
-    : {
-        apiKey: "YOUR_API_KEY", // Replace with your actual API Key
-        authDomain: "YOUR_PROJECT_ID.firebaseapp.com", // Replace with your actual Auth Domain
-        projectId: "YOUR_PROJECT_ID", // Replace with your actual Project ID
-        storageBucket: "YOUR_PROJECT_ID.appspot.com", // Replace with your actual Storage Bucket
-        messagingSenderId: "YOUR_MESSAGING_SENDER_ID", // Replace with your actual Messaging Sender ID
-        appId: "YOUR_APP_ID" // Replace with your actual App ID
-      };
+// --- Removed Firebase Initialization ---
+// const firebaseConfig = ...
+// const app = initializeApp(firebaseConfig);
+// const db = getFirestore(app);
+// const auth = getAuth(app);
+// const appId = ...
+// let userId = null;
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId || 'default-app-id'; // Use projectId as fallback for appId
+// Removed authenticateAnonymously function
+// async function authenticateAnonymously() { ... }
 
-
-let userId = null; // Will store the authenticated user ID
-
-// Authenticate anonymously or with custom token
-async function authenticateAnonymously() {
-    try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-            await signInAnonymously(auth);
-        }
-        userId = auth.currentUser.uid;
-        console.log("Authenticated as:", userId);
-    } catch (error) {
-        console.error("Firebase authentication error:", error);
-        showMessageBox("Authentication failed. Scores may not be saved. Check console for Firebase config.", null);
-    }
-}
-
-// --- Score Saving and Loading Functions ---
+// --- Score Saving and Loading Functions (Dummy implementations without Firebase) ---
 async function saveScore(username, score, level) {
-    if (!userId) {
-        console.error("User not authenticated. Cannot save score.");
-        return;
-    }
-    try {
-        const scoresCollectionRef = collection(db, `artifacts/${appId}/public/data/leaderboard`);
-        await addDoc(scoresCollectionRef, {
-            userId: userId,
-            username: username,
-            score: score,
-            level: level,
-            timestamp: Date.now()
-        });
-        console.log("Score saved successfully!");
-    } catch (e) {
-        console.error("Error adding document: ", e);
-        showMessageBox("Failed to save score. Please check console for details.", null);
-    }
+    console.log(`Score would be saved for: ${username}, Score: ${score}, Level: ${level}`);
+    // In a real scenario, this would send data to your backend (Firestore, AirTable, Google Sheets, etc.)
+    // For now, it just logs to the console.
+    return new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
 }
 
 async function fetchLeaderboard() {
-    try {
-        const scoresCollectionRef = collection(db, `artifacts/${appId}/public/data/leaderboard`);
-        // As per instructions, avoid orderBy() in Firestore queries to prevent index issues.
-        // Fetch a reasonable number and sort in JavaScript.
-        const q = query(scoresCollectionRef, limit(20)); // Fetch up to 20 to ensure we get top 10 after sorting
-        const querySnapshot = await getDocs(q);
-        let scores = [];
-        querySnapshot.forEach((doc) => {
-            scores.push(doc.data());
-        });
-
-        // Sort scores by score (descending), then by level (descending), then by timestamp (ascending for ties)
-        scores.sort((a, b) => {
-            if (b.score !== a.score) {
-                return b.score - a.score;
-            }
-            if (b.level !== a.level) {
-                return b.level - a.level;
-            }
-            return a.timestamp - b.timestamp; // Earlier timestamp wins ties
-        });
-
-        return scores.slice(0, 10); // Return top 10
-    } catch (e) {
-        console.error("Error fetching leaderboard: ", e);
-        showMessageBox("Failed to load leaderboard. Please check console for details.", null);
-        return [];
-    }
+    console.log("Leaderboard would be fetched here.");
+    // In a real scenario, this would fetch data from your backend
+    // For now, it returns dummy data or an empty array.
+    return new Promise(resolve => setTimeout(() => {
+        resolve([
+            { username: 'DummyPlayer1', score: 1000, level: 3 },
+            { username: 'DummyPlayer2', score: 800, level: 2 },
+            { username: 'DummyPlayer3', score: 500, level: 1 }
+        ]);
+    }, 1000)); // Simulate network delay
 }
 
 
@@ -449,7 +390,7 @@ function showQuestionBox(questionData, onAnswerCallback) {
  * @param {object} enemy - The enemy object that triggered the battle.
  */
 function showBattleScreen(enemy) {
-    console.log("showBattleScreen called. Enemy:", enemy); // Re-added debug log
+    // console.log("showBattleScreen called. Enemy:", enemy); // Removed debug log
     gameRunning = false; // Pause game
     battleState = 'active'; // Set battle state to active
     currentEnemy = enemy; // Store reference to the enemy
@@ -458,7 +399,7 @@ function showBattleScreen(enemy) {
     // IMMEDIATELY DEACTIVATE THE ENEMY HERE TO PREVENT RE-TRIGGERING
     if (currentEnemy) {
         currentEnemy.active = false;
-        console.log(`Enemy at worldX ${currentEnemy.originalX} deactivated upon battle start.`); // Re-added debug log
+        // console.log(`Enemy at worldX ${currentEnemy.originalX} deactivated upon battle start.`); // Removed debug log
     }
 
     // Reset keys state when battle screen appears
@@ -494,7 +435,7 @@ function showBattleScreen(enemy) {
  * Presents the next question in the battle sequence.
  */
 function presentNextQuestion() {
-    console.log("presentNextQuestion called. Current Question Index:", currentQuestionIndex, "Correct in row:", correctAnswersInRow); // Re-added debug log
+    // console.log("presentNextQuestion called. Current Question Index:", currentQuestionIndex, "Correct in row:", correctAnswersInRow); // Removed debug log
     // If there are still questions left in the current battle set
     if (currentQuestionIndex < currentBattleQuestions.length) {
         const questionData = currentBattleQuestions[currentQuestionIndex];
@@ -503,7 +444,7 @@ function presentNextQuestion() {
                 score += 100; // Increment score for correct answer
                 correctAnswersInRow++;
                 currentQuestionIndex++; // Move to the next question in the battle sequence
-                console.log("Answer correct. Correct in row:", correctAnswersInRow); // Re-added debug log
+                // console.log("Answer correct. Correct in row:", correctAnswersInRow); // Removed debug log
 
                 if (correctAnswersInRow === QUESTIONS_PER_BATTLE) {
                     // All questions answered correctly for this battle
@@ -515,7 +456,7 @@ function presentNextQuestion() {
                 }
             } else {
                 // Incorrect answer, battle lost
-                console.log("Answer incorrect. Game Over."); // Re-added debug log
+                // console.log("Answer incorrect. Game Over."); // Removed debug log
                 gameOver = true;
                 showMessageBox(`Incorrect! The enemy defeated you. \n\nExplanation: ${explanation}\n\nYour final score: ${score}`, showUsernameInput); // Show username input on game over
             }
@@ -527,7 +468,7 @@ function presentNextQuestion() {
  * Handles actions when the battle is won.
  */
 function battleWon() {
-    console.log("battleWon called."); // Re-added debug log
+    // console.log("battleWon called."); // Removed debug log
     // currentEnemy.active is now set to false in showBattleScreen
     battleState = 'idle'; // Reset battle state
     currentEnemy = null; // Clear enemy reference
@@ -1072,11 +1013,12 @@ function resizeCanvas() {
 // Initial setup on window load
 window.addEventListener('load', () => {
     // Authenticate with Firebase first
-    authenticateAnonymously().then(() => {
+    // Removed Firebase authentication call
+    // authenticateAnonymously().then(() => {
         resizeCanvas(); // Set initial canvas size and player Y
         gameRunning = true; // Game starts immediately
         resetGame(); // Ensure game state is reset and ready (starts Level 1)
         gameLoop(); // Start the main game loop
-    });
+    // });
 });
 window.addEventListener('resize', resizeCanvas); // Listen for window resize events
