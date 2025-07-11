@@ -125,7 +125,7 @@ const AIRTABLE_FIELD_TIMESTAMP_ID = 'fld3RsXd2M0uTK7sa';
 
 // --- Score Saving and Loading Functions (AirTable Implementation) ---
 async function saveScore(username, score, level) {
-    if (AIRTABLE_PERSONAL_ACCESS_TOKEN === 'patMmXy0npBMQuSvY.8cc2f575a61b440805cdc714ff5bc99d70a080c03f892eed23e8b8bbfbac66e4' || AIRTABLE_BASE_ID === 'tbl65sxtBtO5pFlS0') {
+    if (AIRTABLE_PERSONAL_ACCESS_TOKEN === 'YOUR_AIRTABLE_PERSONAL_ACCESS_TOKEN' || AIRTABLE_BASE_ID === 'YOUR_AIRTABLE_BASE_ID') {
         console.error("AirTable Personal Access Token or Base ID not configured. Score not saved.");
         showMessageBox("AirTable not configured. Score not saved. See console.", null);
         return;
