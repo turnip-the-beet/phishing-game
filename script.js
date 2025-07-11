@@ -125,10 +125,10 @@ const AIRTABLE_FIELD_TIMESTAMP_ID = 'fld3RsXd2M0uTK7sa';
 
 // --- Score Saving and Loading Functions (AirTable Implementation) ---
 async function saveScore(username, score, level) {
-    // Corrected check: Compare against the placeholder string, not the actual value
+    // Corrected check: Check if the token or base ID are still the *initial placeholder strings*
     if (AIRTABLE_PERSONAL_ACCESS_TOKEN === 'YOUR_AIRTABLE_PERSONAL_ACCESS_TOKEN' || AIRTABLE_BASE_ID === 'YOUR_AIRTABLE_BASE_ID') {
         console.error("AirTable Personal Access Token or Base ID not configured. Score not saved.");
-        showMessageBox("AirTable not configured. Score not saved. Please replace 'YOUR_AIRTABLE_PERSONAL_ACCESS_TOKEN' and 'YOUR_AIRTABLE_BASE_ID' in script.js.", null);
+        showMessageBox("AirTable not configured. Score not saved. Please replace 'YOUR_AIRTABLE_PERSONAL_ACCESS_TOKEN' and 'YOUR_AIRTABLE_BASE_ID' in script.js with your actual credentials.", null);
         return;
     }
     try {
@@ -154,7 +154,7 @@ async function saveScore(username, score, level) {
             console.log("Score saved to AirTable successfully!", data);
         } else {
             console.error("Error saving score to AirTable:", data);
-            showMessageBox("Failed to save score to leaderboard. Check console.", null);
+            showMessageBox(`Failed to save score to leaderboard. Error: ${data.error?.message || 'Unknown'}. Check console for details.`, null);
         }
     } catch (e) {
         console.error("Network error saving score to AirTable:", e);
@@ -163,7 +163,7 @@ async function saveScore(username, score, level) {
 }
 
 async function fetchLeaderboard() {
-    // Corrected check: Compare against the placeholder string, not the actual value
+    // Corrected check: Check if the token or base ID are still the *initial placeholder strings*
     if (AIRTABLE_PERSONAL_ACCESS_TOKEN === 'YOUR_AIRTABLE_PERSONAL_ACCESS_TOKEN' || AIRTABLE_BASE_ID === 'YOUR_AIRTABLE_BASE_ID') {
         console.warn("AirTable Personal Access Token or Base ID not configured. Cannot fetch leaderboard.");
         return [];
@@ -191,7 +191,7 @@ async function fetchLeaderboard() {
             return scores;
         } else {
             console.error("Error fetching leaderboard from AirTable:", data);
-            showMessageBox("Failed to load leaderboard from AirTable. Check console.", null);
+            showMessageBox(`Failed to load leaderboard from AirTable. Error: ${data.error?.message || 'Unknown'}. Check console for details.`, null);
             return [];
         }
     } catch (e) {
