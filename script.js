@@ -30,15 +30,15 @@ const SWIM_THRUST = 1.5; // Increased Force applied when swimming up/down
 const PLAYER_SPEED = 8; // Horizontal movement speed of the player
 
 const GROUND_HEIGHT = 50; // Height of the ocean floor
-const PLAYER_SCREEN_X = 150; // Player's fixed X position on the screen (relative to canvas)
+const PLAYER_SCREEN_X_OFFSET = 150; // Player's target X position on screen (relative to camera)
 const QUESTIONS_PER_BATTLE = 3; // Number of questions to answer correctly in a row per battle
 
-// Player object - now `x` is its screen position, `worldX` is its actual world position
+// Player object - now `x` and `y` are WORLD coordinates
 let player = {
-    x: PLAYER_SCREEN_X, // Player's screen X position (fixed)
-    y: 0, // Player's screen Y position (will be updated by camera)
-    worldX: PLAYER_SCREEN_X, // Player's actual world X position
-    worldY: 0, // Player's actual world Y position
+    x: 0, // Player's world X position
+    y: 0, // Player's world Y position
+    screenX: 0, // Player's screen X position (derived)
+    screenY: 0, // Player's screen Y position (derived)
     width: 60, // Player width
     height: 60, // Player height
     velocityY: 0,
@@ -58,8 +58,8 @@ const PLATFORM_WIDTH_BASE = 120; // Base platform width
 // Camera variables
 let worldXOffset = 0; // Horizontal scroll offset of the game world
 let worldYOffset = 0; // Vertical scroll offset of the game world
-const PLAYER_SCREEN_Y_CENTER = 0.5; // Player's target Y position on screen (0.5 = center)
-const PLAYER_VERTICAL_DEADZONE = 50; // How far player can move vertically before camera adjusts
+const CAMERA_VERTICAL_CENTER_Y = 0.5; // Target vertical center of the camera (0.5 = middle of canvas)
+const CAMERA_VERTICAL_DEADZONE = 50; // How far player can move vertically before camera adjusts
 
 // Background elements - now store `originalX` for world coordinates and `parallaxFactor`
 let backgroundElements = [];
@@ -527,16 +527,16 @@ function update() {
     // If you add player horizontal velocity later, apply drag there too.
 
     // Update player's worldY position based on velocity
-    player.worldY += player.velocityY;
+    player.y += player.velocityY; // player.y is now worldY
 
     // Keep player within vertical world bounds (ocean surface and floor)
     const maxPlayerWorldY = canvas.height - GROUND_HEIGHT - player.height;
-    if (player.worldY < 0) {
-        player.worldY = 0;
+    if (player.y < 0) {
+        player.y = 0;
         player.velocityY = 0;
     }
-    if (player.worldY > maxPlayerWorldY) {
-        player.worldY = maxPlayerWorldY;
+    if (player.y > maxPlayerWorldY) {
+        player.y = maxPlayerWorldY;
         player.velocityY = 0;
         player.isGrounded = true; // Player is resting on the floor
     } else {
@@ -544,13 +544,13 @@ function update() {
     }
 
     // Camera vertical adjustment (keeps player centered vertically)
-    const targetScreenY = canvas.height * PLAYER_SCREEN_Y_CENTER;
-    const currentScreenY = player.worldY - worldYOffset;
+    const targetScreenY = canvas.height * CAMERA_VERTICAL_CENTER_Y;
+    const currentScreenY = player.y - worldYOffset; // player.y is worldY
 
-    if (currentScreenY < targetScreenY - PLAYER_VERTICAL_DEADZONE) {
-        worldYOffset = player.worldY - (targetScreenY - PLAYER_VERTICAL_DEADZONE);
-    } else if (currentScreenY > targetScreenY + PLAYER_VERTICAL_DEADZONE) {
-        worldYOffset = player.worldY - (targetScreenY + PLAYER_VERTICAL_DEADZONE);
+    if (currentScreenY < targetScreenY - CAMERA_VERTICAL_DEADZONE) {
+        worldYOffset = player.y - (targetScreenY - CAMERA_VERTICAL_DEADZONE);
+    } else if (currentScreenY > targetScreenY + CAMERA_VERTICAL_DEADZONE) {
+        worldYOffset = player.y - (targetScreenY + CAMERA_VERTICAL_DEADZONE);
     }
 
     // Clamp worldYOffset to prevent camera from going beyond world boundaries
@@ -564,26 +564,30 @@ function update() {
     // Only allow movement if not in an active battle
     if (battleState === 'idle') {
         if (keys.left) {
-            worldXOffset = Math.max(0, worldXOffset - PLAYER_SPEED);
+            player.x = Math.max(0, player.x - PLAYER_SPEED); // Update player's worldX
         } else if (keys.right) {
             const currentLevel = levels[currentLevelIndex];
-            // Ensure worldXOffset doesn't go past the end of the level
-            const maxWorldXOffset = currentLevel.levelLength - canvas.width + PLAYER_SCREEN_X;
-            worldXOffset = Math.min(maxWorldXOffset, worldXOffset + PLAYER_SPEED);
+            const maxPlayerWorldX = currentLevel.levelLength - player.width; // Max world X player can reach
+            player.x = Math.min(maxPlayerWorldX, player.x + PLAYER_SPEED); // Update player's worldX
         }
+        // Adjust worldXOffset to keep player.x (world) at PLAYER_SCREEN_X_OFFSET (screen)
+        worldXOffset = player.x - PLAYER_SCREEN_X_OFFSET;
+        // Clamp worldXOffset to level boundaries
+        const currentLevel = levels[currentLevelIndex];
+        worldXOffset = Math.max(0, Math.min(currentLevel.levelLength - canvas.width, worldXOffset));
     }
 
     // Update enemy movement (chasing logic)
     if (battleState === 'idle') { // Enemies only move when not in battle
         backgroundElements.forEach(element => {
             if (element.type === 'enemy' && element.active) { // Only move active enemies
-                // Get enemy's current screen position for chasing calculation
-                const enemyWorldX = element.originalX; // Enemy world X
-                const enemyWorldY = element.y; // Enemy world Y
+                // Get enemy's current world position
+                const enemyWorldX = element.originalX;
+                const enemyWorldY = element.y;
 
-                // Calculate distance to player
-                const dx = (player.worldX + player.width / 2) - (enemyWorldX + element.width / 2);
-                const dy = (player.worldY + player.height / 2) - (enemyWorldY + element.height / 2);
+                // Calculate distance to player in world coordinates
+                const dx = (player.x + player.width / 2) - (enemyWorldX + element.width / 2);
+                const dy = (player.y + player.height / 2) - (enemyWorldY + element.height / 2);
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 // Only chase if player is within detection radius
@@ -597,6 +601,8 @@ function update() {
 
                     // Keep enemy within vertical bounds (ocean surface and seabed)
                     element.y = Math.max(0, Math.min(canvas.height - GROUND_HEIGHT - element.height, element.y));
+                    // Keep enemy within horizontal bounds of the level (optional, but good practice)
+                    element.originalX = Math.max(0, Math.min(levels[currentLevelIndex].levelLength - element.width, element.originalX));
                 }
             }
         });
@@ -607,16 +613,16 @@ function update() {
     for (let i = 0; i < backgroundElements.length; i++) {
         const element = backgroundElements[i];
 
-        // Calculate element's current world position
+        // Get element's current world position
         const elementWorldX = element.originalX;
         const elementWorldY = element.y;
 
         // Player collision with enemy (only if not in battle AND enemy is active)
         if (element.type === 'enemy' && battleState === 'idle' && element.active) {
-            if (player.worldX < elementWorldX + element.width &&
-                player.worldX + player.width > elementWorldX &&
-                player.worldY < elementWorldY + element.height &&
-                player.worldY + player.height > elementWorldY) {
+            if (player.x < elementWorldX + element.width &&
+                player.x + player.width > elementWorldX &&
+                player.y < elementWorldY + element.height &&
+                player.y + player.height > elementWorldY) {
 
                 // Collision with an enemy, initiate battle
                 console.log("Collision with enemy detected. Initiating battle."); // Debug log
@@ -627,35 +633,28 @@ function update() {
         // Player collision with platform (platforms are always active/solid)
         else if (element.type === 'platform') {
             // Check for general AABB collision
-            if (player.worldX < elementWorldX + element.width &&
-                player.worldX + player.width > elementWorldX &&
-                player.worldY < elementWorldY + element.height &&
-                player.worldY + player.height > elementWorldY) {
+            if (player.x < elementWorldX + element.width &&
+                player.x + player.width > elementWorldX &&
+                player.y < elementWorldY + element.height &&
+                player.y + player.height > elementWorldY) {
 
                 // Determine collision side to resolve
-                const overlapX = Math.min(player.worldX + player.width, elementWorldX + element.width) - Math.max(player.worldX, elementWorldX);
-                const overlapY = Math.min(player.worldY + player.height, elementWorldY + element.height) - Math.max(player.worldY, elementWorldY);
+                const overlapX = Math.min(player.x + player.width, elementWorldX + element.width) - Math.max(player.x, elementWorldX);
+                const overlapY = Math.min(player.y + player.height, elementWorldY + element.height) - Math.max(player.y, elementWorldY);
 
                 if (overlapX < overlapY) { // Horizontal collision is smaller, so it's a side collision
-                    // If player is trying to move right and hits left side of platform
-                    if (keys.right && player.worldX < elementWorldX) {
-                        player.worldX = elementWorldX - player.width; // Snap player worldX to edge
-                        // Adjust worldXOffset based on player's new worldX to keep player on screen
-                        worldXOffset = player.worldX - PLAYER_SCREEN_X;
-                    }
-                    // If player is trying to move left and hits right side of platform
-                    else if (keys.left && player.worldX > elementWorldX) {
-                        player.worldX = elementWorldX + element.width; // Snap player worldX to edge
-                        // Adjust worldXOffset based on player's new worldX to keep player on screen
-                        worldXOffset = player.worldX - (PLAYER_SCREEN_X + player.width); // Adjust based on player's right edge
+                    if (player.x < elementWorldX) { // Player hit from left
+                        player.x = elementWorldX - player.width;
+                    } else { // Player hit from right
+                        player.x = elementWorldX + element.width;
                     }
                 } else { // Vertical collision is smaller, so it's a top/bottom collision
-                    if (player.worldY < elementWorldY) { // Player hit from top (landing on platform)
-                        player.worldY = elementWorldY - player.height;
+                    if (player.y < elementWorldY) { // Player hit from top (landing on platform)
+                        player.y = elementWorldY - player.height;
                         player.velocityY = 0;
                         player.isGrounded = true; // Player is resting on platform
-                    } else { // Player.worldY > elementWorldY (player hit from bottom)
-                        player.worldY = elementWorldY + element.height;
+                    } else { // Player hit from bottom (bumping head on platform)
+                        player.y = elementWorldY + element.height;
                         player.velocityY = 0; // Stop upward movement
                     }
                 }
@@ -665,7 +664,7 @@ function update() {
 
     // Win condition for current level: Check if the player has scrolled past the goal
     const currentLevel = levels[currentLevelIndex];
-    const playerWorldX = player.worldX; // Player's actual world X
+    const playerWorldX = player.x; // Player's actual world X
     const goalElement = backgroundElements.find(el => el.type === 'goal');
 
     if (goalElement && playerWorldX > goalElement.originalX + goalElement.width && !goalReached) {
@@ -717,10 +716,11 @@ function draw() {
     }
 
     // Draw the player (always on top, at its fixed screen X and calculated screen Y)
-    // Player's screen Y is its worldY minus the camera's worldYOffset
-    player.y = player.worldY - worldYOffset;
+    // Player's screen X and Y are now calculated from world position and camera offset
+    player.screenX = player.x - worldXOffset;
+    player.screenY = player.y - worldYOffset;
     ctx.fillStyle = 'red'; // Color for the swimming guy
-    ctx.fillRect(player.x, player.y, player.width, player.height);
+    ctx.fillRect(player.screenX, player.screenY, player.width, player.height);
 }
 
 /**
@@ -751,8 +751,8 @@ function resetLevel() {
     worldYOffset = 0; // Reset vertical world scroll
     
     // Player starts floating slightly above the seabed, relative to world coordinates
-    player.worldX = PLAYER_SCREEN_X; // Reset player's world X
-    player.worldY = canvas.height - GROUND_HEIGHT - player.height - 20; 
+    player.x = PLAYER_SCREEN_X_OFFSET; // Player's initial world X
+    player.y = canvas.height - GROUND_HEIGHT - player.height - 20; // Player's initial world Y
     player.velocityY = 0;
     player.isGrounded = false; // Player starts floating
     gameOver = false;
