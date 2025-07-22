@@ -102,7 +102,7 @@ canvas {
 }
 
 
-.message-box, .question-box, .battle-screen {
+.message-box, .question-box, .battle-screen, .input-box, .leaderboard-box { /* Added input-box and leaderboard-box */
     position: fixed;
     top: 50%;
     left: 50%;
@@ -120,18 +120,18 @@ canvas {
     max-width: 90%; /* Responsive width */
 }
 
-.question-box h2, .battle-screen h1 {
+.question-box h2, .battle-screen h1, .input-box h2, .leaderboard-box h2 { /* Added input-box h2, leaderboard-box h2 */
     font-size: 2em;
     margin-bottom: 15px;
     color: #ffc107; /* Yellowish title */
 }
 
-.question-box p, .battle-screen p {
+.question-box p, .battle-screen p, .input-box p { /* Added input-box p */
     margin-bottom: 10px;
     line-height: 1.4;
 }
 
-.message-box button, .question-box button, .battle-screen button {
+.message-box button, .question-box button, .battle-screen button, .input-box button, .leaderboard-box button { /* Added input-box button, leaderboard-box button */
     margin-top: 20px;
     padding: 12px 25px;
     background-color: #007bff;
@@ -146,7 +146,7 @@ canvas {
     text-transform: uppercase;
 }
 
-.message-box button:active, .question-box button:active, .battle-screen button:active {
+.message-box button:active, .question-box button:active, .battle-screen button:active, .input-box button:active, .leaderboard-box button:active { /* Added input-box button:active, leaderboard-box button:active */
     background-color: #0056b3;
     transform: translateY(2px);
     box-shadow: 0 3px #004085;
@@ -161,4 +161,57 @@ canvas {
 .question-box .options-container button {
     width: 100%; /* Make option buttons full width */
     margin-top: 0; /* Override default button margin-top */
+}
+
+/* Styles for Username Input Box */
+.input-box input[type="text"] {
+    width: calc(100% - 20px); /* Adjust for padding */
+    padding: 10px;
+    margin-top: 15px;
+    border: 2px solid #0099ff;
+    border-radius: 5px;
+    background-color: #1a1a2e;
+    color: #fff;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.9em;
+    text-align: center;
+}
+.input-box input[type="text"]::placeholder {
+    color: #aaa;
+}
+
+/* Styles for Leaderboard Box */
+.leaderboard-box ol {
+    list-style-type: decimal; /* Use standard decimal numbering */
+    padding: 0 20px; /* Add padding for the numbers */
+    margin: 20px 0;
+    text-align: left;
+    max-height: 250px; /* Limit height for scroll if many scores */
+    overflow-y: auto; /* Enable scrolling */
+    border: 1px solid #0099ff;
+    border-radius: 5px;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+.leaderboard-box li {
+    padding: 8px 0px; /* Adjust padding, no horizontal padding needed here */
+    border-bottom: 1px dashed rgba(0, 150, 255, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9em;
+    padding-left: 10px; /* Indent text slightly for numbers */
+}
+.leaderboard-box li:last-child {
+    border-bottom: none;
+}
+.leaderboard-box li span:first-child {
+    color: #ffc107; /* Highlight username */
+    flex-grow: 1; /* Allow username to take up available space */
+    text-align: left;
+}
+.leaderboard-box li span:last-child {
+    color: #4CAF50; /* Highlight score */
+    flex-shrink: 0; /* Prevent score from shrinking */
+    padding-left: 10px; /* Space between name and score */
+    text-align: right;
 }
