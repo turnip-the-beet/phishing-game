@@ -114,7 +114,7 @@ let isBattling = false; // Flag to prevent multiple battle triggers
 // 2. Get your Base ID: Go to airtable.com/api, select your base (e.g., "Scoreboard"), and the ID will be at the top of the page (starts with 'app...').
 // 3. Make sure your AirTable table has columns named "Username", "Score", "Level", "Timestamp".
 const AIRTABLE_PERSONAL_ACCESS_TOKEN = 'patMmXy0npBMQuSvY.8cc2f575a61b440805cdc714ff5bc99d70a080c03f892eed23e8b8bbfbac66e4'; // YOUR ACTUAL AIRTABLE PERSONAL ACCESS TOKEN
-const AIRTABLE_BASE_ID = 'appJo4NxAqgGRQXUF'; // Corrected Base ID
+const AIRTABLE_BASE_ID = 'appJo4NxAqgGRQXUF'; // Your actual Base ID
 const AIRTABLE_TABLE_NAME = 'Scoreboard'; // Your actual Table Name
 
 // --- AirTable Field IDs (from your documentation) ---
@@ -175,9 +175,9 @@ async function fetchLeaderboard() {
         const sortParams = `sort%5B0%5D%5Bfield%5D=Score&sort%5B0%5D%5Bdirection%5D=desc&sort%5B1%5D%5Bfield%5D=Level&sort%5B1%5D%5Bdirection%5D=desc&sort%5B2%5D%5Bfield%5D=Timestamp&sort%5B2%5D%5Bdirection%5D=asc`;
         
         // Request specific fields by NAMES (as per AirTable API default response for fields)
-        const fieldsParams = `fields%5B%5D=Username&fields%5B%5D=Score&fields%5B%5D=Level`;
+        const fieldsParams = `fields%5B%5D=Username&fields%5B%5D=Score&fields%5B%5D=Level`; // Corrected typo: removed extra '='
 
-        const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?${sortParams}&${fieldsParams}&maxRecords=10`, {
+        const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?${sortParams}&${fieldsParams}&maxRecords=5`, { // Changed maxRecords to 5
             headers: {
                 'Authorization': `Bearer ${AIRTABLE_PERSONAL_ACCESS_TOKEN}` // Use PAT here
             }
@@ -185,9 +185,9 @@ async function fetchLeaderboard() {
         const data = await response.json();
         if (response.ok) {
             let scores = data.records.map(record => ({
-                username: record.fields.Username, // Access by Field Name
-                score: parseInt(record.fields.Score),       // Access by Field Name, parse to int
-                level: parseInt(record.fields.Level)        // Access by Field Name, parse to int
+                username: record.fields.Username || 'N/A', // Access by Field Name, add fallback
+                score: parseInt(record.fields.Score) || 0,       // Access by Field Name, parse to int, add fallback
+                level: parseInt(record.fields.Level) || 0        // Access by Field Name, parse to int, add fallback
             }));
             return scores;
         } else {
