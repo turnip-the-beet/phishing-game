@@ -118,6 +118,8 @@ const AIRTABLE_BASE_ID = 'appJo4NxAqgGRQXUF'; // Corrected Base ID
 const AIRTABLE_TABLE_NAME = 'Scoreboard'; // Your actual Table Name
 
 // --- AirTable Field IDs (from your documentation) ---
+// These are still useful for POST requests if you prefer to use IDs,
+// but for GET requests, we'll use field names as per AirTable's default response.
 const AIRTABLE_FIELD_USERNAME_ID = 'fldtgOwdNqcBVdK5A';
 const AIRTABLE_FIELD_SCORE_ID = 'fldEUbxxZePBVnXxA';
 const AIRTABLE_FIELD_LEVEL_ID = 'fldoRa2nsYP8gOCei';
@@ -141,10 +143,10 @@ async function saveScore(username, score, level) {
             body: JSON.stringify({
                 records: [{
                     fields: {
-                        [AIRTABLE_FIELD_USERNAME_ID]: username, // Use Field ID
-                        [AIRTABLE_FIELD_SCORE_ID]: score,       // Use Field ID
-                        [AIRTABLE_FIELD_LEVEL_ID]: level,       // Use Field ID
-                        [AIRTABLE_FIELD_TIMESTAMP_ID]: new Date().toISOString() // Use Field ID
+                        "Username": username, // Use Field Name for POST
+                        "Score": score,       // Use Field Name for POST
+                        "Level": level,       // Use Field Name for POST
+                        "Timestamp": new Date().toISOString() // Use Field Name for POST
                     }
                 }]
             })
@@ -169,12 +171,11 @@ async function fetchLeaderboard() {
         return [];
     }
     try {
-        // Sort by Score (desc), then Level (desc), then Timestamp (asc for ties)
-        // Use Field IDs for sorting
-        const sortParams = `sort%5B0%5D%5Bfield%5D=${AIRTABLE_FIELD_SCORE_ID}&sort%5B0%5D%5Bdirection%5D=desc&sort%5B1%5D%5Bfield%5D=${AIRTABLE_FIELD_LEVEL_ID}&sort%5B1%5D%5Bdirection%5D=desc&sort%5B2%5D%5Bfield%5D=${AIRTABLE_FIELD_TIMESTAMP_ID}&sort%5B2%5D%5Bdirection%5D=asc`;
+        // Sort by Field NAMES (as per AirTable API default response for sorting)
+        const sortParams = `sort%5B0%5D%5Bfield%5D=Score&sort%5B0%5D%5Bdirection%5D=desc&sort%5B1%5D%5Bfield%5D=Level&sort%5B1%5D%5Bdirection%5D=desc&sort%5B2%5D%5Bfield%5D=Timestamp&sort%5B2%5D%5Bdirection%5D=asc`;
         
-        // Request specific fields by ID
-        const fieldsParams = `fields%5B%5D=${AIRTABLE_FIELD_USERNAME_ID}&fields%5B%5D=${AIRTABLE_FIELD_SCORE_ID}&fields%5B%5D=${AIRTABLE_FIELD_LEVEL_ID}`;
+        // Request specific fields by NAMES (as per AirTable API default response for fields)
+        const fieldsParams = `fields%5B%5D=Username&fields%5B%5D=Score&fields%5B%5D=Level`;
 
         const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?${sortParams}&${fieldsParams}&maxRecords=10`, {
             headers: {
@@ -184,9 +185,9 @@ async function fetchLeaderboard() {
         const data = await response.json();
         if (response.ok) {
             let scores = data.records.map(record => ({
-                username: record.fields[AIRTABLE_FIELD_USERNAME_ID], // Access by Field ID
-                score: record.fields[AIRTABLE_FIELD_SCORE_ID],       // Access by Field ID
-                level: record.fields[AIRTABLE_FIELD_LEVEL_ID]        // Access by Field ID
+                username: record.fields.Username, // Access by Field Name
+                score: parseInt(record.fields.Score),       // Access by Field Name, parse to int
+                level: parseInt(record.fields.Level)        // Access by Field Name, parse to int
             }));
             return scores;
         } else {
