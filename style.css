@@ -118,6 +118,7 @@ canvas {
     font-size: 1.2em;
     border: 3px solid #0099ff; /* Blue border */
     max-width: 90%; /* Responsive width */
+    white-space: pre-wrap; 
 }
 
 .question-box h2, .battle-screen h1, .input-box h2, .leaderboard-box h2 { /* Added input-box h2, leaderboard-box h2 */
