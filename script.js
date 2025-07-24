@@ -16,7 +16,7 @@ const fullscreenButton = document.getElementById('fullscreenButton'); // Get ful
 
 // Get message box elements
 const messageBox = document.getElementById('messageBox');
-const messageText = document.getElementById('messageText'); // This will now hold structured HTML
+const messageContent = document.getElementById('messageContent'); // NEW: Reference the new content div
 const messageButton = document.getElementById('messageButton');
 
 // Get question box elements
@@ -432,7 +432,7 @@ const levels = [
 function showMessageBox(titleText, bodyText, callback) {
     gameRunning = false; // Pause game when message box is shown
     // Construct HTML content for the message box
-    messageText.innerHTML = `<h3>${titleText}</h3><p>${bodyText.replace(/\n/g, '<br>')}</p>`;
+    messageContent.innerHTML = `<h3>${titleText}</h3><p>${bodyText.replace(/\n/g, '<br>')}</p>`; // Use messageContent
     messageBox.style.display = 'block';
     messageButton.onclick = () => {
         messageBox.style.display = 'none';
@@ -541,7 +541,11 @@ function presentNextQuestion() {
                     battleWon();
                 } else {
                     // Not yet 3 correct answers, present the next question
-                    showMessageBox(`Correct! You have ${correctAnswersInRow}/${QUESTIONS_PER_BATTLE} correct in a row.`, presentNextQuestion);
+                    showMessageBox(
+                        `Correct!`, // Title as plain string
+                        `You have ${correctAnswersInRow}/${QUESTIONS_PER_BATTLE} correct in a row.`, // Body as plain string
+                        presentNextQuestion
+                    );
                 }
             } else {
                 // Incorrect answer, battle lost
@@ -595,7 +599,7 @@ function showUsernameInput() {
             usernameInputBox.style.display = 'none';
             showLeaderboard(); // Show leaderboard after saving
         } else {
-            showMessageBox("Please enter a username to save your score.", null);
+            showMessageBox("Please enter a username to save your score.", "", null); // Corrected arguments
         }
     };
 }
@@ -1055,7 +1059,7 @@ leftButton.addEventListener('mouseleave', () => { keys.left = false; }); // For 
 rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameRunning) keys.right = true; }, { passive: false });
 rightButton.addEventListener('touchend', (e) => { e.preventDefault(); if(gameRunning) keys.right = false; }, { passive: false });
 rightButton.addEventListener('mousedown', () => { if(gameRunning) keys.right = true; });
-rightButton.addEventListener('mouseup', () => { keys.right = false; });
+rightButton.addEventListener('mouseup', () => { keys.left = false; });
 rightButton.addEventListener('mouseleave', () => { keys.left = false; }); // For mouse leaving button area
 
 jumpButton.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameRunning) keys.up = true; }, { passive: false });
