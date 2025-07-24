@@ -16,7 +16,7 @@ const fullscreenButton = document.getElementById('fullscreenButton'); // Get ful
 
 // Get message box elements
 const messageBox = document.getElementById('messageBox');
-const messageText = document.getElementById('messageText');
+const messageText = document.getElementById('messageText'); // This will now hold structured HTML
 const messageButton = document.getElementById('messageButton');
 
 // Get question box elements
@@ -171,13 +171,14 @@ async function fetchLeaderboard() {
         return [];
     }
     try {
-        // Sort by Field NAMES (as per AirTable API default response for sorting)
+        // Sort by Score (desc), then Level (desc), then Timestamp (asc for ties)
+        // Use Field NAMES for sorting
         const sortParams = `sort%5B0%5D%5Bfield%5D=Score&sort%5B0%5D%5Bdirection%5D=desc&sort%5B1%5D%5Bfield%5D=Level&sort%5B1%5D%5Bdirection%5D=desc&sort%5B2%5D%5Bfield%5D=Timestamp&sort%5B2%5D%5Bdirection%5D=asc`;
         
         // Request specific fields by NAMES (as per AirTable API default response for fields)
         const fieldsParams = `fields%5B%5D=Username&fields%5B%5D=Score&fields%5B%5D=Level`; // Corrected typo: removed extra '='
 
-        const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?${sortParams}&${fieldsParams}&maxRecords=5`, { // Changed maxRecords to 5
+        const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?${sortParams}&${fieldsParams}&maxRecords=5`, {
             headers: {
                 'Authorization': `Bearer ${AIRTABLE_PERSONAL_ACCESS_TOKEN}` // Use PAT here
             }
