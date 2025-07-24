@@ -118,8 +118,23 @@ canvas {
     font-size: 1.2em;
     border: 3px solid #0099ff; /* Blue border */
     max-width: 90%; /* Responsive width */
-    white-space: pre-wrap; 
+    white-space: pre-wrap; /* Ensures newlines in JS strings are respected */
 }
+
+/* Specific styling for message box content */
+.message-box h3 {
+    font-size: 1.5em; /* Slightly smaller than h1/h2 but still prominent */
+    color: #ffc107; /* Yellowish title */
+    margin-top: 0; /* Remove default top margin */
+    margin-bottom: 10px; /* Space below title */
+}
+
+.message-box p {
+    margin-top: 5px; /* Space above paragraph */
+    margin-bottom: 5px; /* Space below paragraph */
+    line-height: 1.4;
+}
+
 
 .question-box h2, .battle-screen h1, .input-box h2, .leaderboard-box h2 { /* Added input-box h2, leaderboard-box h2 */
     font-size: 2em;
