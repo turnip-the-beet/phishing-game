@@ -118,10 +118,15 @@ canvas {
     font-size: 1.2em;
     border: 3px solid #0099ff; /* Blue border */
     max-width: 90%; /* Responsive width */
-    white-space: pre-wrap; /* Ensures newlines in JS strings are respected */
+    /* Removed white-space: pre-wrap from here, it's now on #messageContent */
 }
 
-/* Specific styling for message box content */
+/* Specific styling for message box content container */
+#messageContent { /* NEW: Target the content div inside message-box */
+    white-space: pre-wrap; /* Ensures newlines in JS strings are respected */
+    text-align: center; /* Ensure content inside is centered */
+}
+
 .message-box h3 {
     font-size: 1.5em; /* Slightly smaller than h1/h2 but still prominent */
     color: #ffc107; /* Yellowish title */
