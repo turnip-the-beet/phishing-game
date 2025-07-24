@@ -37,7 +37,7 @@ const finalScoreText = document.getElementById('finalScoreText');
 // Get Leaderboard Box elements
 const leaderboardBox = document.getElementById('leaderboardBox');
 const leaderboardList = document.getElementById('leaderboardList');
-const playAgainButton = document.getElementById('playAgainButton');
+const playAgainButton = document.getElementById('playAgain');
 
 
 // Game constants and variables
@@ -425,12 +425,13 @@ const levels = [
 
 /**
  * Displays a message box to the user.
- * @param {string} message - The message to display.
+ * @param {string} titleHtml - The HTML for the message title (e.g., "<h3>Title</h3>").
+ * @param {string} bodyHtml - The HTML for the message body (e.g., "<p>Content</p>").
  * @param {function} callback - Function to call when the OK button is clicked.
  */
-function showMessageBox(message, callback) {
+function showMessageBox(titleHtml, bodyHtml, callback) {
     gameRunning = false; // Pause game when message box is shown
-    messageText.textContent = message;
+    messageText.innerHTML = `<h3>${titleHtml}</h3><p>${bodyHtml}</p>`; // Use innerHTML to render HTML
     messageBox.style.display = 'block';
     messageButton.onclick = () => {
         messageBox.style.display = 'none';
@@ -545,7 +546,12 @@ function presentNextQuestion() {
                 // Incorrect answer, battle lost
                 console.log("Answer incorrect. Game Over."); // Re-added debug log
                 gameOver = true;
-                showMessageBox(`Incorrect! The enemy defeated you. \n\nExplanation: ${explanation}\n\nYour final score: ${score}`, showUsernameInput); // Show username input on game over
+                // Updated showMessageBox call to pass title and body separately
+                showMessageBox(
+                    `<h3>Incorrect! The enemy defeated you.</h3>`, // Title with H3 tag
+                    `<p>Explanation: ${explanation}</p><p>Your final score: ${score}</p>`, // Body with P tags
+                    showUsernameInput
+                );
             }
         });
     }
@@ -852,7 +858,8 @@ function update() {
                         player.x = elementWorldX + element.width;
                     }
                 } else { // Vertical collision is smaller, so it's a top/bottom collision
-                    if (player.y < elementWorldY) { // Player hit from top (landing on platform)
+                    if (player.y < elementWorldY) // Player hit from top (landing on platform)
+                    {
                         player.y = elementWorldY - player.height;
                         player.velocityY = 0;
                         player.isGrounded = true; // Player is resting on platform
@@ -878,7 +885,7 @@ function update() {
             // Advance to next level
             console.log(`Advancing to Level ${currentLevelIndex + 2}`);
             currentLevelIndex++;
-            showMessageBox(`Level ${currentLevel.levelNumber} Complete! Moving to Level ${levels[currentLevelIndex].levelNumber}!`, () => {
+            showMessageBox(`Level ${currentLevel.levelNumber} Complete!`, `Moving to Level ${levels[currentLevelIndex].levelNumber}!`, () => {
                 console.log("Message box dismissed. Calling resetLevel for new level.");
                 resetLevel(); // Reset game state for the new level
             });
@@ -886,7 +893,7 @@ function update() {
             // All levels complete!
             console.log("All levels completed!");
             gameOver = true;
-            showMessageBox("Congratulations! You completed all levels and mastered cybersecurity!", showUsernameInput); // Show username input on game completion
+            showMessageBox("Congratulations!", "You completed all levels and mastered cybersecurity!", showUsernameInput); // Show username input on game completion
         }
         return; // Stop updating if goal reached
     }
