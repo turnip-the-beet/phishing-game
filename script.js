@@ -130,7 +130,7 @@ async function saveScore(username, score, level) {
     // Corrected check: Check if the token or base ID are still the *initial placeholder strings*
     if (AIRTABLE_PERSONAL_ACCESS_TOKEN === 'YOUR_AIRTABLE_PERSONAL_ACCESS_TOKEN' || AIRTABLE_BASE_ID === 'YOUR_AIRTABLE_BASE_ID') {
         console.error("AirTable Personal Access Token or Base ID not configured. Score not saved.");
-        showMessageBox("AirTable not configured. Score not saved. Please replace 'YOUR_AIRTABLE_PERSONAL_ACCESS_TOKEN' and 'YOUR_AIRTABLE_BASE_ID' in script.js.", null);
+        showMessageBox("AirTable not configured.", "Score not saved. Please replace 'YOUR_AIRTABLE_PERSONAL_ACCESS_TOKEN' and 'YOUR_AIRTABLE_BASE_ID' in script.js.", null);
         return;
     }
     try {
@@ -156,11 +156,11 @@ async function saveScore(username, score, level) {
             console.log("Score saved to AirTable successfully!", data);
         } else {
             console.error("Error saving score to AirTable:", data);
-            showMessageBox(`Failed to save score to leaderboard. Error: ${data.error?.message || 'Unknown'}. Check console for details.`, null);
+            showMessageBox("Failed to save score to leaderboard.", `Error: ${data.error?.message || 'Unknown'}. Check console for details.`, null);
         }
     } catch (e) {
         console.error("Network error saving score to AirTable:", e);
-        showMessageBox("Network error saving score. Check console.", null);
+        showMessageBox("Network error saving score.", "Check console for details.", null);
     }
 }
 
@@ -193,12 +193,12 @@ async function fetchLeaderboard() {
             return scores;
         } else {
             console.error("Error fetching leaderboard from AirTable:", data);
-            showMessageBox(`Failed to load leaderboard from AirTable. Error: ${data.error?.message || 'Unknown'}. Check console for details.`, null);
+            showMessageBox("Failed to load leaderboard from AirTable.", `Error: ${data.error?.message || 'Unknown'}. Check console for details.`, null);
             return [];
         }
     } catch (e) {
         console.error("Network error fetching leaderboard from AirTable:", e);
-        showMessageBox("Network error loading leaderboard. Check console.", null);
+        showMessageBox("Network error loading leaderboard.", "Check console for details.", null);
         return [];
     }
 }
@@ -425,13 +425,14 @@ const levels = [
 
 /**
  * Displays a message box to the user.
- * @param {string} titleHtml - The HTML for the message title (e.g., "<h3>Title</h3>").
- * @param {string} bodyHtml - The HTML for the message body (e.g., "<p>Content</p>").
+ * @param {string} titleText - The plain text for the message title.
+ * @param {string} bodyText - The plain text for the message body (newlines will be converted to <br>).
  * @param {function} callback - Function to call when the OK button is clicked.
  */
-function showMessageBox(titleHtml, bodyHtml, callback) {
+function showMessageBox(titleText, bodyText, callback) {
     gameRunning = false; // Pause game when message box is shown
-    messageText.innerHTML = `<h3>${titleHtml}</h3><p>${bodyHtml}</p>`; // Use innerHTML to render HTML
+    // Construct HTML content for the message box
+    messageText.innerHTML = `<h3>${titleText}</h3><p>${bodyText.replace(/\n/g, '<br>')}</p>`;
     messageBox.style.display = 'block';
     messageButton.onclick = () => {
         messageBox.style.display = 'none';
@@ -548,8 +549,8 @@ function presentNextQuestion() {
                 gameOver = true;
                 // Updated showMessageBox call to pass title and body separately
                 showMessageBox(
-                    `<h3>Incorrect! The enemy defeated you.</h3>`, // Title with H3 tag
-                    `<p>Explanation: ${explanation}</p><p>Your final score: ${score}</p>`, // Body with P tags
+                    `Incorrect! The enemy defeated you.`, // Title as plain string
+                    `Explanation: ${explanation}\nYour final score: ${score}`, // Body as plain string with \n
                     showUsernameInput
                 );
             }
