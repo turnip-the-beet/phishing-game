@@ -20,10 +20,10 @@ canvas {
     border: 5px solid #0056b3; /* Darker blue border for ocean theme */
     border-radius: 15px;
     box-shadow: 0 0 20px rgba(0, 150, 255, 0.7); /* Blue glow effect */
-    width: 90vw; /* Responsive width */
-    max-width: 800px; /* Max width for larger screens */
-    height: calc(90vw * 0.5625); /* Maintain 16:9 aspect ratio (90vw * 9/16) */
-    max-height: 450px; /* Max height for larger screens */
+    width: 95vw; /* Increased responsive width */
+    max-width: 1000px; /* Increased max width for larger screens */
+    height: calc(95vw * 0.5625); /* Maintain 16:9 aspect ratio (95vw * 9/16) */
+    max-height: 562.5px; /* Increased max height (1000px * 9/16) */
 }
 
 .game-controls {
